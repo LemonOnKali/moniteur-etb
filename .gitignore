@@ -1,0 +1,4 @@
+etat.json
+etat.json.tmp
+__pycache__/
+*.pyc

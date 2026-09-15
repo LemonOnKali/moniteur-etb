@@ -1,0 +1,56 @@
+name: Moniteur de stock
+
+on:
+  schedule:
+    # Toutes les 15 min (UTC). Chaque exécution surveille pendant 20 min,
+    # les exécutions s'enchaînent donc sans trou grâce au groupe de concurrence.
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+# Une seule exécution à la fois ; la suivante attend au lieu d'annuler.
+concurrency:
+  group: moniteur
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  moniteur:
+    name: Surveillance des produits
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # L'état (dispo/prix) est conservé entre deux exécutions pour n'alerter
+      # qu'au passage en stock, jamais deux fois pour le même produit.
+      - name: Restaurer l'état précédent
+        uses: actions/cache/restore@v4
+        with:
+          path: etat.json
+          key: etat-moniteur-${{ github.run_id }}
+          restore-keys: |
+            etat-moniteur-
+
+      - name: Lancer le moniteur
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DISCORD_MENTION: ${{ vars.DISCORD_MENTION }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          PYTHONUNBUFFERED: "1"
+        run: python moniteur.py
+
+      - name: Sauvegarder l'état
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: etat.json
+          key: etat-moniteur-${{ github.run_id }}
