@@ -78,6 +78,13 @@ UA_DISCORD = f"MoniteurStock/{VERSION} (+https://github.com/lemononkali/moniteur
 
 MOTS_RUPTURE_DEFAUT = ["rupture de stock", "épuisé", "indisponible", "sold out"]
 
+# Mots autour desquels le mode --diagnostic affiche des extraits de page,
+# pour choisir les bons mots_rupture / mots_stock d'une nouvelle boutique.
+MOTS_DIAGNOSTIC = [
+    "en stock", "rupture", "epuis", "indisponible", "sold out", "panier",
+    "precommande", "prevenir", "bientot", "reapprovisionn", "disponible", "commander",
+]
+
 TYPES_VALIDES = {"shopify", "woocommerce", "texte", "auto"}
 
 # --------------------------------------------------------------------------- #
@@ -402,6 +409,53 @@ def verifier(produit: Produit) -> Resultat:
         return Resultat(dispo=None, detail=f"erreur inattendue {type(err).__name__} : {err}", source=produit.type)
 
 
+def extraits(texte: str, mots: list[str], marge: int = 45, maximum: int = 12) -> list[str]:
+    """Petits extraits du texte visible autour de chaque mot-clé (pour --diagnostic)."""
+    resultats: list[str] = []
+    deja: set[int] = set()
+    for mot in mots:
+        debut = 0
+        while len(resultats) < maximum:
+            pos = texte.find(normaliser(mot), debut)
+            if pos < 0:
+                break
+            if all(abs(pos - d) > marge for d in deja):
+                deja.add(pos)
+                resultats.append("…" + texte[max(0, pos - marge): pos + len(mot) + marge] + "…")
+            debut = pos + 1
+    return resultats
+
+
+def diagnostiquer(produit: Produit) -> Resultat:
+    """Vérifie un produit et affiche de quoi comprendre la page (mode --diagnostic)."""
+    resultat = verifier(produit)
+    source = produit.type_detecte or resultat.source or produit.type
+    etat = "ERREUR" if resultat.dispo is None else ("EN STOCK" if resultat.dispo else "rupture")
+    lignes = [
+        f"=== {produit.nom} [{produit.type} → {source}] {etat}  {formater_prix(resultat.prix)}",
+        f"    {produit.url}",
+    ]
+    if resultat.detail:
+        lignes.append(f"    détail : {resultat.detail}")
+    if source in ("texte", "auto") or resultat.dispo is None:
+        try:
+            page = telecharger_texte(produit.url)
+        except ErreurVerification as err:
+            lignes.append(f"    page : {err}")
+            page = ""
+        if page:
+            texte = texte_visible(page)
+            lignes.append(f"    page : {len(page)} caractères, texte visible {len(texte)} caractères")
+            if "shopify" in page.lower():
+                lignes.append('    indice : la page mentionne Shopify → essaie type "shopify"')
+            if "woocommerce" in page.lower() or "wp-content" in page.lower():
+                lignes.append('    indice : la page mentionne WooCommerce/WordPress → essaie type "woocommerce"')
+            for extrait in extraits(texte, MOTS_DIAGNOSTIC):
+                lignes.append(f"    · {extrait}")
+    print("\n".join(lignes) + "\n", flush=True)  # un seul print : pas d'entrelacement entre threads
+    return resultat
+
+
 # --------------------------------------------------------------------------- #
 # Discord
 # --------------------------------------------------------------------------- #
@@ -578,6 +632,11 @@ def main(argv: list[str] | None = None) -> int:
     parseur = argparse.ArgumentParser(description="Moniteur de stock avec alertes Discord.")
     parseur.add_argument("--une-fois", action="store_true", help="un seul cycle puis sortie")
     parseur.add_argument("--test-discord", action="store_true", help="envoie un message de test et quitte")
+    parseur.add_argument(
+        "--diagnostic",
+        action="store_true",
+        help="un seul cycle sans Discord, avec des extraits de page pour régler chaque boutique",
+    )
     args = parseur.parse_args(argv)
 
     if args.test_discord:
@@ -588,6 +647,14 @@ def main(argv: list[str] | None = None) -> int:
     if not produits:
         log("Aucun produit à surveiller : vérifie produits.json.")
         return 1
+
+    if args.diagnostic:
+        with ThreadPoolExecutor(max_workers=min(MAX_WORKERS, len(produits))) as executeur:
+            resultats = list(executeur.map(diagnostiquer, produits))
+        nb_err = sum(1 for r in resultats if r.dispo is None)
+        print(f"\n{len(produits)} produit(s) : {sum(1 for r in resultats if r.dispo)} en stock, "
+              f"{sum(1 for r in resultats if r.dispo is False)} en rupture, {nb_err} erreur(s)")
+        return 0
 
     duree = 0 if args.une_fois else DUREE_MINUTES * 60
     intervalle = max(5.0, INTERVALLE_SECONDES)

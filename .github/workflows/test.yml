@@ -1,0 +1,24 @@
+name: Tester les boutiques
+
+# Lancement manuel uniquement : un seul passage, sans Discord, avec des
+# extraits de chaque page pour vérifier qu'une boutique est bien détectée.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostic:
+    name: Diagnostic des produits
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Diagnostic
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: python moniteur.py --diagnostic
