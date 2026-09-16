@@ -119,6 +119,8 @@ class Produit:
     type: str = "auto"
     mots_rupture: list[str] = field(default_factory=lambda: list(MOTS_RUPTURE_DEFAUT))
     mots_stock: list[str] = field(default_factory=list)
+    regex_stock: str | None = None  # expression régulière sur le HTML brut → en stock si elle matche
+    regex_rupture: str | None = None  # expression régulière sur le HTML brut → rupture si elle matche
     variante: str | None = None  # ne considérer que les variantes dont le titre contient ce texte
     prix_max: float | None = None  # au-delà, on ne signale pas (surcharge PRIX_MAX)
     mots_explicites: bool = False  # mots_rupture / mots_stock fournis dans produits.json
@@ -145,6 +147,14 @@ class Produit:
         if not isinstance(mots_rupture, list) or not isinstance(mots_stock, list):
             raise ValueError(f"produit '{nom}' : 'mots_rupture' et 'mots_stock' doivent être des listes")
         variante = brut.get("variante")
+        regex_stock = brut.get("regex_stock") or None
+        regex_rupture = brut.get("regex_rupture") or None
+        for nom_champ, motif in (("regex_stock", regex_stock), ("regex_rupture", regex_rupture)):
+            if motif is not None:
+                try:
+                    re.compile(str(motif), re.IGNORECASE | re.DOTALL)
+                except re.error as err:
+                    raise ValueError(f"produit '{nom}' : '{nom_champ}' invalide ({err})")
         prix_max = brut.get("prix_max")
         if prix_max is not None:
             try:
@@ -159,6 +169,8 @@ class Produit:
             mots_stock=[str(m) for m in mots_stock],
             variante=str(variante).strip() if variante else None,
             prix_max=prix_max,
+            regex_stock=str(regex_stock) if regex_stock else None,
+            regex_rupture=str(regex_rupture) if regex_rupture else None,
             mots_explicites=bool(brut.get("mots_rupture") or brut.get("mots_stock")),
             actif=bool(brut.get("actif", True)),
         )
@@ -365,7 +377,9 @@ def verifier_prestashop(produit: Produit) -> Resultat:
         m_prix = re.search(r"\d+(?:[.,]\d+)?", brut.replace("\u00a0", ""))
         if m_prix:
             prix = float(m_prix.group(0).replace(",", "."))
-    detail = f"availability : {disponibilite or quantite}"
+    detail = f"availability={disponibilite!r} quantity={quantite!r}"
+    if "add_to_cart_url" in donnees:
+        detail += f" panier={'oui' if donnees.get('add_to_cart_url') else 'non'}"
     message = donnees.get("availability_message")
     if message:
         detail += f" ({message})"
@@ -382,7 +396,7 @@ _RE_SCHEMA_DISPO = re.compile(
     r'LimitedAvailability|OnlineOnly|InStoreOnly|Discontinued)\b'
 )
 _RE_PRESTASHOP = re.compile(r'data-product\s*=\s*"(\{[^"]*)"')  # objet JSON échappé (&quot;)
-_RE_BRUT_DIAG = re.compile(r'.{0,60}(?:availability|in_stock|instock|outofstock|"stock|quantity"|indisponible|epuise|rupture|oos).{0,60}', re.IGNORECASE)
+_RE_BRUT_DIAG = re.compile(r'.{0,70}(?:availability|in_?stock|outofstock|"stock|quantity"|indisponible|[ée]puis[ée]|rupture|dispo(?!nibilit)).{0,70}', re.IGNORECASE)
 _RE_PRIX_META = re.compile(
     r"""(?:property|itemprop|name)\s*=\s*["'](?:product:price:amount|og:price:amount|price)["'][^>]*?content\s*=\s*["']([\d.,]+)["']"""
     r"""|content\s*=\s*["']([\d.,]+)["'][^>]*?(?:property|itemprop|name)\s*=\s*["'](?:product:price:amount|og:price:amount|price)["']""",
@@ -450,6 +464,17 @@ def verifier_texte(produit: Produit) -> Resultat:
     if raison:
         raise ErreurVerification(raison)
     prix = extraire_prix(page)
+
+    # Expressions régulières sur le HTML brut (pages JavaScript, marqueurs CSS…).
+    if produit.regex_stock:
+        if re.search(produit.regex_stock, page, re.IGNORECASE | re.DOTALL):
+            return Resultat(dispo=True, prix=prix, detail="regex_stock trouvée", source="texte")
+        if not produit.regex_rupture:
+            return Resultat(dispo=False, prix=prix, detail="regex_stock absente", source="texte")
+    if produit.regex_rupture:
+        if re.search(produit.regex_rupture, page, re.IGNORECASE | re.DOTALL):
+            return Resultat(dispo=False, prix=prix, detail="regex_rupture trouvée", source="texte")
+        return Resultat(dispo=True, prix=prix, detail="regex_rupture absente", source="texte")
 
     # Données structurées (schema.org) : plus fiables que les mots, sauf si
     # produits.json fournit explicitement ses propres mots.
@@ -554,6 +579,12 @@ def diagnostiquer(produit: Produit) -> Resultat:
                 lignes.append(f"    ⚠️  {raison}")
             if len(texte) < 1500:
                 lignes.append(f"    texte visible : {texte[:600]!r}")
+            for ident in sorted(set(re.findall(r"\d{4,}", urlsplit(produit.url).path)), key=len, reverse=True)[:2]:
+                for k, m in enumerate(re.finditer(re.escape(ident), page)):
+                    if k >= 3:
+                        break
+                    ctx = " ".join(page[max(0, m.start() - 220): m.end() + 220].split())
+                    lignes.append(f"    #{ident} : {ctx}")
             bruts = []
             for m in _RE_BRUT_DIAG.finditer(page):
                 extrait = " ".join(m.group(0).split())
