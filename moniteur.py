@@ -683,22 +683,43 @@ def lister_liens(url: str) -> int:
         print(f"Impossible de lire {url} : {err}")
         return 1
     vus: list[str] = []
-    for m in re.finditer(r'href\s*=\s*["\']([^"\'#]+)["\']', page, re.IGNORECASE):
+    redirections: list[str] = []  # liens internes de type /go/, /out/, affiliation…
+    total = 0
+    for m in re.finditer(r'(?:href|data-href|data-url|data-link)\s*=\s*["\']([^"\'#]+)["\']', page, re.IGNORECASE):
         lien = html.unescape(m.group(1)).strip()
         if lien.startswith("/"):
             base = urlsplit(url)
             lien = urlunsplit((base.scheme, base.netloc, lien, "", ""))
         if not lien.startswith("http"):
             continue
-        if urlsplit(lien).netloc == urlsplit(url).netloc:
-            continue  # liens internes du comparateur
+        total += 1
+        interne = urlsplit(lien).netloc == urlsplit(url).netloc
+        if interne:
+            if re.search(r"/(go|out|redirect|redir|aff|lien|link|track|click|deal|offre|buy|acheter)[/?-]", lien, re.IGNORECASE):
+                if lien not in redirections:
+                    redirections.append(lien)
+            continue
         if not any(e in lien.lower() for e in ENSEIGNES_CONNUES):
             continue
         if lien not in vus:
             vus.append(lien)
-    print(f"{len(vus)} lien(s) marchand(s) trouvé(s) sur {url} :")
+    # Suit les redirections internes (liens affiliés) pour retrouver l'URL marchande.
+    for lien in redirections[:40]:
+        try:
+            _, _, _, finale = telecharger(lien)
+        except ErreurVerification as err:
+            finale = f"(échec : {err})"
+        if finale.startswith("http") and urlsplit(finale).netloc != urlsplit(url).netloc:
+            vus.append(f"{finale}   ← via {lien}")
+    print(f"{total} lien(s) sur la page, {len(vus)} lien(s) marchand(s) trouvé(s) sur {url} :")
     for lien in vus:
         print("  " + lien)
+    if not vus:
+        hotes = sorted({urlsplit(html.unescape(m.group(1))).netloc for m in re.finditer(r'href\s*=\s*["\'](https?://[^"\'#]+)', page, re.IGNORECASE)})
+        print("  aucun. Domaines liés depuis la page : " + ", ".join(hotes[:40]))
+        for m in list(re.finditer(r'(amazon|fnac|cultura|micromania|leclerc|cdiscount|carrefour|auchan|joueclub|king-jouet)', page, re.IGNORECASE))[:15]:
+            ctx = " ".join(page[max(0, m.start() - 160): m.end() + 200].split())
+            print("  ~ " + ctx)
     return 0
 
 
