@@ -12,6 +12,21 @@
     "type": "texte"
   },
   {
+    "nom": "Cultura ETB 30 ans (recherche EAN)",
+    "url": "https://www.cultura.com/search/results?search_query=0196214144835",
+    "type": "texte",
+    "mots_stock": [
+      "ajouter au panier"
+    ],
+    "note": "Cultura n'a pas encore de fiche : recherche par code EAN. En stock si un bouton Ajouter au panier apparaît dans les résultats."
+  },
+  {
+    "nom": "Courses U ETB 30 ans",
+    "url": "https://www.coursesu.com/p/coffret-dresseur-asmodee/1833259.html",
+    "type": "texte",
+    "note": "Drive Système U : réponses incohérentes depuis GitHub (403), à valider depuis le PC."
+  },
+  {
     "nom": "Fnac ETB 30 ans",
     "url": "https://www.fnac.com/Cartes-a-collectionner-Pokemon-30A-Coffret-Dresseur-d-Elite/a23200296/w-4",
     "type": "texte"

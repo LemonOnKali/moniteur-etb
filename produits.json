@@ -121,18 +121,5 @@
     "nom": "La Grande Récré ETB 30 ans",
     "url": "https://www.lagranderecre.fr/jeux-de-societe/cartes-a-collectionner/coffret-dresseur-d-elite-pokemon-30e-anniversaire.html",
     "type": "texte"
-  },
-  {
-    "nom": "Courses U ETB 30 ans",
-    "url": "https://www.coursesu.com/p/coffret-dresseur-asmodee/1833259.html",
-    "type": "texte"
-  },
-  {
-    "nom": "Cultura ETB 30 ans (recherche EAN)",
-    "url": "https://www.cultura.com/search/results?search_query=0196214144835",
-    "type": "texte",
-    "mots_stock": [
-      "ajouter au panier"
-    ]
   }
 ]

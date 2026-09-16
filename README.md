@@ -35,12 +35,13 @@ bibliothèque standard, c'est tout.
 ## Boutiques surveillées
 
 Voir `produits.json`. Actuellement, le Coffret Dresseur d'Élite 30e Anniversaire chez :
-LorenZone, PokeMael, Collect Avenue (Shopify) · Ecardstore, PixelHeart (WooCommerce) ·
-Foxchip, Les Gentlemen du Jeu, BCD Jeux, Pokesumo, Ludocortex, Pokezenith (PrestaShop) ·
-UltraJeux, Au Dé Mon du Jeu, Smartoys, Philibert, Play-in (page HTML).
+LorenZone, PokeMael, Collect Avenue, Poke-Geek, Hikaru Distribution, Outpost Brussels (Shopify) ·
+Ecardstore, PixelHeart, Guizette Family (WooCommerce) · Foxchip, Les Gentlemen du Jeu, BCD Jeux,
+Pokesumo, Ludocortex, Pokezenith, Plaza TCG, Fantastik, 1001hobbies (PrestaShop) ·
+UltraJeux, Au Dé Mon du Jeu, Smartoys, Philibert, JouéClub, La Grande Récré (page HTML).
 
-Les grandes enseignes (Amazon, Carrefour, Smyths, Fnac, Cultura, Micromania,
-Leclerc, Cdiscount) bloquent les robots venant des serveurs GitHub. Elles sont
+Les grandes enseignes (Amazon, Fnac, Cdiscount, Carrefour, Smyths, Cultura,
+Courses U) bloquent les robots venant des serveurs GitHub. Elles sont
 dans `produits-pc.json`, surveillé par le workflow **Moniteur de stock (PC)** qui
 tourne sur ton propre ordinateur (voir ci-dessous).
 
@@ -59,6 +60,11 @@ sur le même Discord.
 3. Onglet *Actions* → *Tester les boutiques* → *Run workflow* avec le choix `pc`
    pour vérifier ce que chaque enseigne répond depuis chez toi.
 4. Onglet *Actions* → *Moniteur de stock (PC)* → *Run workflow*.
+
+Pour retrouver les fiches produit des enseignes sur une page « où acheter »
+(LeCrocoDeal, etc.) : *Tester les boutiques* → *Run workflow* en renseignant
+le champ « page_liens » avec l'adresse de la page, ou en local :
+`python moniteur.py --liens URL`.
 
 Le PC doit rester allumé (un Raspberry Pi convient). Si une enseigne affiche
 « page anti-robot » même depuis chez toi, elle exige un vrai navigateur : garde

@@ -431,6 +431,8 @@ _RE_SCHEMA_DISPO = re.compile(
     r'(InStock|OutOfStock|SoldOut|PreOrder|BackOrder|PreSale|LimitedAvailability|OnlineOnly|InStoreOnly|Discontinued)\b',
     re.IGNORECASE,
 )
+_RE_WEBSTORE = re.compile(r'"webStore"\s*:\s*\{\s*"available"\s*:\s*(true|false)', re.IGNORECASE)
+_RE_WEBSTORE_TITRE = re.compile(r'"thresholdTitle"\s*:\s*"([^"]{1,60})"')
 _RE_PRESTASHOP = re.compile(r'data-product\s*=\s*"(\{[^"]*)"')  # objet JSON échappé (&quot;)
 _RE_BRUT_DIAG = re.compile(r'.{0,70}(?:availability|in_?stock|outofstock|"stock|quantity"|indisponible|[ée]puis[ée]|rupture|dispo(?!nibilit)).{0,70}', re.IGNORECASE)
 _RE_PRIX_META = re.compile(
@@ -488,12 +490,25 @@ SCHEMA_EN_STOCK = {"InStock", "LimitedAvailability", "OnlineOnly", "PreOrder", "
 SCHEMA_VALEURS = SCHEMA_EN_STOCK | {"OutOfStock", "SoldOut", "Discontinued", "InStoreOnly"}
 
 
+_RE_TITRE = re.compile(r"<title[^>]*>(.*?)</title>", re.IGNORECASE | re.DOTALL)
+
+
 def page_anti_robot(page_html: str, texte: str) -> str | None:
-    """Renvoie une raison si la page ressemble à un blocage anti-robot, sinon None."""
-    bas = page_html.lower()
-    for mot in MOTS_ANTI_ROBOT:
-        if normaliser(mot) in normaliser(bas[:20000]):
-            return f"page anti-robot (« {mot} »)"
+    """Renvoie une raison si la page ressemble à un blocage anti-robot, sinon None.
+
+    Une vraie fiche produit contient souvent le mot « captcha » (reCAPTCHA d'un
+    formulaire) : on ne conclut au blocage que si la page est petite ou si son
+    titre l'annonce.
+    """
+    m = _RE_TITRE.search(page_html)
+    titre = normaliser(html.unescape(m.group(1))) if m else ""
+    if re.search(r"captcha|robot|access denied|acces refuse|attention required|blocked|verification|challenge|just a moment", titre):
+        return f"page anti-robot (titre : « {titre[:60]} »)"
+    if len(page_html) < 30000:
+        bas = normaliser(page_html)
+        for mot in MOTS_ANTI_ROBOT:
+            if normaliser(mot) in bas:
+                return f"page anti-robot (« {mot} »)"
     if len(texte) < 300:
         return f"page presque vide ({len(texte)} caractères visibles) : blocage ou page 100 % JavaScript"
     return None
@@ -519,6 +534,14 @@ def verifier_texte(produit: Produit) -> Resultat:
         if re.search(produit.regex_rupture, page, re.IGNORECASE | re.DOTALL):
             return Resultat(dispo=False, prix=prix, detail="regex_rupture trouvée", source="texte")
         return Resultat(dispo=True, prix=prix, detail="regex_rupture absente", source="texte")
+
+    # Plateforme Proximis (JouéClub, La Grande Récré…) : disponibilité web en JSON.
+    m_web = _RE_WEBSTORE.search(page)
+    if m_web and not produit.mots_explicites:
+        dispo = m_web.group(1).lower() == "true"
+        titre = _RE_WEBSTORE_TITRE.search(page)
+        detail = "webStore.available=" + m_web.group(1) + (f" ({titre.group(1)})" if titre else "")
+        return Resultat(dispo=dispo, prix=prix, detail=detail, source="texte")
 
     # Données structurées (schema.org) : plus fiables que les mots, sauf si
     # produits.json fournit explicitement ses propres mots.
@@ -623,6 +646,8 @@ def diagnostiquer(produit: Produit) -> Resultat:
             schema = disponibilite_schema(page)
             if schema:
                 lignes.append(f"    schema.org : {schema}")
+            if _RE_WEBSTORE.search(page):
+                lignes.append("    indice : données Proximis (webStore.available) présentes")
             if _RE_PRESTASHOP.search(page):
                 lignes.append('    indice : données PrestaShop présentes → type "prestashop"')
             raison = page_anti_robot(page, texte)
