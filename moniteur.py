@@ -467,8 +467,9 @@ def disponibilite_schema(page_html: str) -> str | None:
     return next((v for v in SCHEMA_VALEURS if v.lower() == valeur.lower()), valeur)
 
 
-SCHEMA_EN_STOCK = {"InStock", "LimitedAvailability", "OnlineOnly", "InStoreOnly", "PreOrder", "PreSale", "BackOrder"}
-SCHEMA_VALEURS = SCHEMA_EN_STOCK | {"OutOfStock", "SoldOut", "Discontinued"}
+# InStoreOnly = seulement en magasin physique : pas achetable en ligne.
+SCHEMA_EN_STOCK = {"InStock", "LimitedAvailability", "OnlineOnly", "PreOrder", "PreSale", "BackOrder"}
+SCHEMA_VALEURS = SCHEMA_EN_STOCK | {"OutOfStock", "SoldOut", "Discontinued", "InStoreOnly"}
 
 
 def page_anti_robot(page_html: str, texte: str) -> str | None:
@@ -616,6 +617,14 @@ def diagnostiquer(produit: Produit) -> Resultat:
                     montres += 1
                     if montres >= 5:
                         break
+            apis = []
+            for m in re.finditer(r'["\'](/[^"\'\s<>]*(?:api|graphql)[^"\'\s<>]*|https?://[^"\'\s<>]*(?:api|graphql)[^"\'\s<>]*)["\']', page, re.IGNORECASE):
+                if m.group(1) not in apis:
+                    apis.append(m.group(1))
+                if len(apis) >= 8:
+                    break
+            if apis:
+                lignes.append("    api : " + " | ".join(apis))
             bruts = []
             for m in _RE_BRUT_DIAG.finditer(page):
                 extrait = " ".join(m.group(0).split())
