@@ -2,7 +2,9 @@ name: Tester les boutiques
 
 # Lancement manuel uniquement : un seul passage, sans Discord, avec des
 # extraits de chaque page pour vérifier qu'une boutique est bien détectée.
-# Choisis "pc" pour tester produits-pc.json depuis ton runner auto-hébergé.
+# - "ou" : github (serveurs GitHub) ou pc (ton runner auto-hébergé).
+# - "page_liens" : optionnel, URL d'une page comparateur (« où acheter ») dont
+#   on veut extraire les liens marchands au lieu de lancer le diagnostic.
 on:
   workflow_dispatch:
     inputs:
@@ -13,6 +15,10 @@ on:
         options:
           - github
           - pc
+      page_liens:
+        description: "URL d'une page « où acheter » pour en extraire les liens (optionnel)"
+        type: string
+        required: false
 
 permissions:
   contents: read
@@ -28,7 +34,13 @@ jobs:
         if: inputs.ou != 'pc'
         with:
           python-version: "3.12"
+      - name: Liens marchands de la page
+        if: inputs.page_liens != ''
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python moniteur.py --liens "${{ inputs.page_liens }}"
       - name: Diagnostic
+        if: inputs.page_liens == ''
         env:
           FICHIER_PRODUITS: ${{ inputs.ou == 'pc' && 'produits-pc.json' || 'produits.json' }}
           PYTHONUNBUFFERED: "1"

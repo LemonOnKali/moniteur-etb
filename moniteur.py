@@ -667,6 +667,41 @@ def diagnostiquer(produit: Produit) -> Resultat:
     return resultat
 
 
+ENSEIGNES_CONNUES = [
+    "amazon.", "fnac.", "cultura.", "micromania.", "leclerc", "cdiscount.", "carrefour.",
+    "auchan.", "joueclub.", "king-jouet.", "smythstoys.", "rakuten.", "boulanger.", "darty.",
+    "ldlc.", "lagranderecre.", "picwictoys.", "pokemoncenter.", "philibertnet.", "play-in.",
+    "ultrajeux.", "shopify", "/products/", "/produit/", "/product/", ".html",
+]
+
+
+def lister_liens(url: str) -> int:
+    """Affiche les liens marchands d'une page (comparateurs, articles « où acheter »)."""
+    try:
+        page = telecharger_texte(url)
+    except ErreurVerification as err:
+        print(f"Impossible de lire {url} : {err}")
+        return 1
+    vus: list[str] = []
+    for m in re.finditer(r'href\s*=\s*["\']([^"\'#]+)["\']', page, re.IGNORECASE):
+        lien = html.unescape(m.group(1)).strip()
+        if lien.startswith("/"):
+            base = urlsplit(url)
+            lien = urlunsplit((base.scheme, base.netloc, lien, "", ""))
+        if not lien.startswith("http"):
+            continue
+        if urlsplit(lien).netloc == urlsplit(url).netloc:
+            continue  # liens internes du comparateur
+        if not any(e in lien.lower() for e in ENSEIGNES_CONNUES):
+            continue
+        if lien not in vus:
+            vus.append(lien)
+    print(f"{len(vus)} lien(s) marchand(s) trouvé(s) sur {url} :")
+    for lien in vus:
+        print("  " + lien)
+    return 0
+
+
 # --------------------------------------------------------------------------- #
 # Discord
 # --------------------------------------------------------------------------- #
@@ -861,6 +896,7 @@ def main(argv: list[str] | None = None) -> int:
     parseur = argparse.ArgumentParser(description="Moniteur de stock avec alertes Discord.")
     parseur.add_argument("--une-fois", action="store_true", help="un seul cycle puis sortie")
     parseur.add_argument("--test-discord", action="store_true", help="envoie un message de test et quitte")
+    parseur.add_argument("--liens", metavar="URL", help="liste les liens marchands d'une page (comparateur) et quitte")
     parseur.add_argument(
         "--diagnostic",
         action="store_true",
@@ -871,6 +907,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.test_discord:
         ok = envoyer_discord("🧪 Test du moniteur : le webhook fonctionne.")
         return 0 if ok else 1
+    if args.liens:
+        return lister_liens(args.liens)
 
     produits = charger_produits()
     if not produits:

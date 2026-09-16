@@ -76,5 +76,35 @@
     "url": "https://www.smartoys.be/catalog/trading-cards-pokemon-pokemon-jcc-coffret-dresseur-delite-30e-anniversaire-p-0196214144835.html",
     "type": "texte",
     "regex_rupture": "non disponible online"
+  },
+  {
+    "nom": "Poke-Geek ETB 30 ans",
+    "url": "https://www.poke-geek.fr/products/coffret-dresseur-d-elite-pokemon-30e-anniversaire-francais",
+    "type": "shopify"
+  },
+  {
+    "nom": "Hikaru Distribution ETB 30 ans",
+    "url": "https://hikarudistribution.com/products/elite-trainer-box-30th-celebration-francais",
+    "type": "shopify"
+  },
+  {
+    "nom": "Outpost Brussels (Belgique) ETB 30 ans",
+    "url": "https://outpostbrussels.be/products/pokemon-30e-anniversaire-coffret-dresseur-delite-fr-s",
+    "type": "shopify"
+  },
+  {
+    "nom": "Plaza TCG ETB 30 ans",
+    "url": "https://plazatcg.com/etb/2184-pokemon-etb-coffret-dresseur-d-elite-30e-anniversaire-francais-196214144835.html",
+    "type": "auto"
+  },
+  {
+    "nom": "Fantastik ETB 30 ans",
+    "url": "https://fantastik.fr/33093-prochainement-pokemon-coffret-dresseur-d-elite-celebration-30-ans.html",
+    "type": "auto"
+  },
+  {
+    "nom": "Guizette Family ETB 30 ans",
+    "url": "https://www.guizettefamily.com/produit/etb-30-ans-pokemon/",
+    "type": "auto"
   }
 ]
