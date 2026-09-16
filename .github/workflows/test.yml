@@ -2,8 +2,17 @@ name: Tester les boutiques
 
 # Lancement manuel uniquement : un seul passage, sans Discord, avec des
 # extraits de chaque page pour vérifier qu'une boutique est bien détectée.
+# Choisis "pc" pour tester produits-pc.json depuis ton runner auto-hébergé.
 on:
   workflow_dispatch:
+    inputs:
+      ou:
+        description: "Où lancer le test"
+        type: choice
+        default: github
+        options:
+          - github
+          - pc
 
 permissions:
   contents: read
@@ -11,14 +20,17 @@ permissions:
 jobs:
   diagnostic:
     name: Diagnostic des produits
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.ou == 'pc' && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
+        if: inputs.ou != 'pc'
         with:
           python-version: "3.12"
       - name: Diagnostic
         env:
+          FICHIER_PRODUITS: ${{ inputs.ou == 'pc' && 'produits-pc.json' || 'produits.json' }}
           PYTHONUNBUFFERED: "1"
+          PYTHONIOENCODING: utf-8
         run: python moniteur.py --diagnostic

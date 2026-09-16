@@ -55,13 +55,6 @@
     "type": "prestashop"
   },
   {
-    "nom": "Play-in ETB 30 ans",
-    "url": "https://www.play-in.com/fr/produit/659570/coffret-dresseur-d-elite-etb-30-ans-pokemon-fr",
-    "type": "texte",
-    "actif": false,
-    "note": "Page rendue en JavaScript : le stock n'est pas dans le HTML. À réactiver avec regex_stock si Play-in expose ses données."
-  },
-  {
     "nom": "Philibert ETB 30 ans",
     "url": "https://www.philibertnet.com/fr/pokemon/181759-pokemon-30-ans-coffret-dresseur-d-elite-2100001405977.html",
     "type": "texte",
@@ -83,36 +76,5 @@
     "url": "https://www.smartoys.be/catalog/trading-cards-pokemon-pokemon-jcc-coffret-dresseur-delite-30e-anniversaire-p-0196214144835.html",
     "type": "texte",
     "regex_rupture": "non disponible online"
-  },
-  {
-    "nom": "Amazon ETB 30 ans",
-    "url": "https://www.amazon.fr/dp/B0H8SVJL9F",
-    "type": "texte",
-    "mots_stock": [
-      "ajouter au panier"
-    ],
-    "actif": false,
-    "note": "Amazon bloque les robots depuis les serveurs GitHub (captcha)."
-  },
-  {
-    "nom": "Smyths Toys ETB 30 ans",
-    "url": "https://www.smythstoys.com/fr/fr-fr/jouets/jeux-de-societe-et-puzzles/cartes-a-collectionner/cartes-pokemon/pokemon-coffret-dresseur-delite-30eme-anniversaire/p/261821",
-    "type": "texte",
-    "actif": false,
-    "note": "Smyths renvoie une page de blocage anti-robot depuis GitHub."
-  },
-  {
-    "nom": "Carrefour ETB 30 ans",
-    "url": "https://www.carrefour.fr/p/cartes-a-jouer-et-a-collectionner-coffret-dresseur-d-elite-30e-anniversaire-pokemon-0196214144835",
-    "type": "texte",
-    "actif": false,
-    "note": "Carrefour répond HTTP 403 depuis GitHub."
-  },
-  {
-    "nom": "King Jouet ETB 30 ans",
-    "url": "https://www.king-jouet.com/jeu-jouet/jeux-societes/cartes-a-collectionner/ref-1034916-pokemon-30-ans-coffret-dresseur-d-elite.htm",
-    "type": "texte",
-    "actif": false,
-    "note": "Page retirée par King Jouet (erreur 410). Réactiver si une nouvelle fiche apparaît."
   }
 ]

@@ -1,0 +1,33 @@
+[
+  {
+    "nom": "Amazon ETB 30 ans",
+    "url": "https://www.amazon.fr/dp/B0H8SVJL9F",
+    "type": "texte",
+    "regex_stock": "id=\"add-to-cart-button\"",
+    "note": "En stock si le bouton Ajouter au panier de la boîte d'achat est présent. Prix lu dans la page, filtré par PRIX_MAX."
+  },
+  {
+    "nom": "Carrefour ETB 30 ans",
+    "url": "https://www.carrefour.fr/p/cartes-a-jouer-et-a-collectionner-coffret-dresseur-d-elite-30e-anniversaire-pokemon-0196214144835",
+    "type": "texte"
+  },
+  {
+    "nom": "Smyths Toys ETB 30 ans",
+    "url": "https://www.smythstoys.com/fr/fr-fr/jouets/jeux-de-societe-et-puzzles/cartes-a-collectionner/cartes-pokemon/pokemon-coffret-dresseur-delite-30eme-anniversaire/p/261821",
+    "type": "texte"
+  },
+  {
+    "nom": "King Jouet ETB 30 ans",
+    "url": "https://www.king-jouet.com/jeu-jouet/jeux-societes/cartes-a-collectionner/ref-1034916-pokemon-30-ans-coffret-dresseur-d-elite.htm",
+    "type": "texte",
+    "actif": false,
+    "note": "Fiche retirée (410). Remplacer l'URL quand King Jouet republie le produit."
+  },
+  {
+    "nom": "Play-in ETB 30 ans",
+    "url": "https://www.play-in.com/fr/produit/659570/coffret-dresseur-d-elite-etb-30-ans-pokemon-fr",
+    "type": "texte",
+    "actif": false,
+    "note": "Stock chargé en JavaScript. Il faut l'adresse de l'API (F12 → Réseau) pour l'activer."
+  }
+]

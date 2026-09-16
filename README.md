@@ -39,9 +39,30 @@ LorenZone, PokeMael, Collect Avenue (Shopify) · Ecardstore, PixelHeart (WooComm
 Foxchip, Les Gentlemen du Jeu, BCD Jeux, Pokesumo, Ludocortex, Pokezenith (PrestaShop) ·
 UltraJeux, Au Dé Mon du Jeu, Smartoys, Philibert, Play-in (page HTML).
 
-Désactivés (`"actif": false`) car ils bloquent les robots depuis les serveurs
-GitHub : Amazon, Carrefour, Smyths Toys, ainsi que Fnac, Cultura, Micromania,
-Leclerc et Cdiscount qui ne sont pas listés pour la même raison.
+Les grandes enseignes (Amazon, Carrefour, Smyths, Fnac, Cultura, Micromania,
+Leclerc, Cdiscount) bloquent les robots venant des serveurs GitHub. Elles sont
+dans `produits-pc.json`, surveillé par le workflow **Moniteur de stock (PC)** qui
+tourne sur ton propre ordinateur (voir ci-dessous).
+
+## Surveiller les grandes enseignes depuis ton PC
+
+Le workflow `monitor-pc.yml` exécute le même script sur ton ordinateur, avec
+ton adresse IP de box, via un *runner auto-hébergé* GitHub. Les alertes arrivent
+sur le même Discord.
+
+1. Installe Python 3.12 depuis https://www.python.org/downloads/ en cochant
+   **Add python.exe to PATH** et, dans *Customize installation*, **Install for
+   all users**.
+2. Sur GitHub : *Settings → Actions → Runners → New self-hosted runner*, choisis
+   ton système et copie-colle les commandes affichées dans un terminal. À la
+   question « run as service », réponds `Y` pour qu'il démarre avec le PC.
+3. Onglet *Actions* → *Tester les boutiques* → *Run workflow* avec le choix `pc`
+   pour vérifier ce que chaque enseigne répond depuis chez toi.
+4. Onglet *Actions* → *Moniteur de stock (PC)* → *Run workflow*.
+
+Le PC doit rester allumé (un Raspberry Pi convient). Si une enseigne affiche
+« page anti-robot » même depuis chez toi, elle exige un vrai navigateur : garde
+ses alertes officielles.
 
 ## Ajouter une boutique
 
@@ -107,6 +128,7 @@ Quel type choisir ?
 
 ```bash
 python moniteur.py --diagnostic                     # un passage détaillé, sans Discord
+FICHIER_PRODUITS=produits-pc.json python moniteur.py --diagnostic   # idem pour les enseignes
 python moniteur.py --une-fois                       # un cycle normal, sans Discord
 DISCORD_WEBHOOK=https://discord.com/api/webhooks/... python moniteur.py --test-discord
 ```

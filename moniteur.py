@@ -225,6 +225,14 @@ def telecharger(url: str, accept: str = "*/*") -> tuple[int, bytes, str, str]:
         "Accept-Encoding": "gzip, deflate",
         "Cache-Control": "no-cache",
         "Pragma": "no-cache",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Sec-CH-UA": '"Chromium";v="128", "Not;A=Brand";v="24", "Google Chrome";v="128"',
+        "Sec-CH-UA-Mobile": "?0",
+        "Sec-CH-UA-Platform": '"Windows"',
     }
     derniere_erreur: Exception | None = None
     for tentative in range(1, TENTATIVES_HTTP + 1):
@@ -413,6 +421,11 @@ _RE_COMMENTAIRE = re.compile(r"<!--.*?-->", re.DOTALL)
 _RE_BALISE = re.compile(r"<[^>]+>")
 _RE_ESPACES = re.compile(r"\s+")
 _RE_PRIX_JSONLD = re.compile(r'"price"\s*:\s*"?(\d+(?:[.,]\d+)?)"?')
+_RE_PRIX_AUTRES = re.compile(
+    r'"priceAmount"\s*:\s*(\d+(?:\.\d+)?)'  # Amazon
+    r'|class="a-offscreen">\s*(\d+(?:[.,]\d{2}))\s*€'  # Amazon
+    r'|"priceValue"\s*:\s*"?(\d+(?:[.,]\d+)?)'  # divers
+)
 _RE_SCHEMA_DISPO = re.compile(
     r'(?:schema\.org/|availability["\']?\s*(?:content\s*=|:)\s*["\']?(?:https?://schema\.org/)?)'
     r'(InStock|OutOfStock|SoldOut|PreOrder|BackOrder|PreSale|LimitedAvailability|OnlineOnly|InStoreOnly|Discontinued)\b',
@@ -451,6 +464,9 @@ def extraire_prix(page_html: str) -> float | None:
     if not brut:
         m2 = _RE_PRIX_JSONLD.search(page_html)
         brut = m2.group(1) if m2 else ""
+    if not brut:
+        m3 = _RE_PRIX_AUTRES.search(page_html)
+        brut = next((g for g in m3.groups() if g), "") if m3 else ""
     try:
         prix = float(brut.replace(",", "."))
     except ValueError:

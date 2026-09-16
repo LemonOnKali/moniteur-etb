@@ -1,0 +1,58 @@
+name: Moniteur de stock (PC)
+
+# Même moniteur, mais exécuté sur TON ordinateur (runner auto-hébergé) avec
+# ton adresse IP de box : pour les enseignes qui bloquent les serveurs GitHub.
+# Liste des produits : produits-pc.json (différente de produits.json pour ne
+# pas recevoir deux fois la même alerte).
+#
+# Installation du runner : Settings → Actions → Runners → New self-hosted runner.
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: moniteur-pc
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  moniteur:
+    name: Surveillance depuis le PC
+    runs-on: self-hosted
+    timeout-minutes: 360
+
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Restaurer l'état précédent
+        uses: actions/cache/restore@v4
+        with:
+          path: etat.json
+          key: etat-pc-${{ github.run_id }}
+          restore-keys: |
+            etat-pc-
+
+      - name: Lancer le moniteur
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DISCORD_MENTION: ${{ vars.DISCORD_MENTION }}
+          PRIX_MAX: ${{ vars.PRIX_MAX || '100' }}
+          DUREE_MINUTES: ${{ vars.DUREE_MINUTES || '350' }}
+          INTERVALLE_SECONDES: ${{ vars.INTERVALLE_SECONDES || '60' }}
+          FICHIER_PRODUITS: produits-pc.json
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          PYTHONUNBUFFERED: "1"
+          PYTHONIOENCODING: utf-8
+        run: python moniteur.py
+
+      - name: Sauvegarder l'état
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: etat.json
+          key: etat-pc-${{ github.run_id }}
