@@ -12,12 +12,14 @@ Moniteur de stock — GitHub Actions + Discord.
 Types de produit supportés (champ "type" dans produits.json) :
   shopify      -> interroge <url>.js (JSON officiel Shopify, très fiable)
   woocommerce  -> interroge l'API Store WooCommerce (/wp-json/wc/store/v1/products?slug=...)
-  texte        -> télécharge la page et cherche des mots de rupture / de stock
-  auto         -> essaie shopify, puis woocommerce, puis texte
+  prestashop   -> lit le JSON data-product de la page (PrestaShop 1.7+)
+  texte        -> lit les données schema.org de la page, sinon cherche des mots de rupture / de stock
+  auto         -> essaie shopify, woocommerce, prestashop, puis texte
 
 Variables d'environnement :
   DISCORD_WEBHOOK       URL du webhook Discord (jamais dans le code !)
   DISCORD_MENTION       optionnel, ex. "@everyone" ou "<@&ID_DU_ROLE>"
+  PRIX_MAX              optionnel, ne pas alerter au-dessus de ce prix en euros (anti-spéculateurs)
   GITHUB_EVENT_NAME     fourni par GitHub Actions ("workflow_dispatch" = lancement manuel)
   DUREE_MINUTES         durée totale d'une exécution (défaut 20)
   INTERVALLE_SECONDES   délai entre deux cycles (défaut 60)
@@ -76,7 +78,15 @@ UA_NAVIGATEUR = (
 )
 UA_DISCORD = f"MoniteurStock/{VERSION} (+https://github.com/lemononkali/moniteur-etb)"
 
-MOTS_RUPTURE_DEFAUT = ["rupture de stock", "épuisé", "indisponible", "sold out"]
+MOTS_RUPTURE_DEFAUT = ["rupture", "épuisé", "indisponible", "sold out", "plus disponible", "me prévenir"]
+
+# Au-delà de ce prix (en euros), un produit en stock n'est pas signalé (revendeurs
+# spéculateurs). Vide = pas de limite. Surchargeable par produit avec "prix_max".
+PRIX_MAX = float(os.environ.get("PRIX_MAX") or 0) or None
+
+# Signes d'une page anti-robot (captcha, blocage) : on préfère une erreur claire
+# à une fausse détection.
+MOTS_ANTI_ROBOT = ["captcha", "automated access", "are you a human", "access denied", "êtes-vous un robot", "verify you are human"]
 
 # Mots autour desquels le mode --diagnostic affiche des extraits de page,
 # pour choisir les bons mots_rupture / mots_stock d'une nouvelle boutique.
@@ -85,7 +95,7 @@ MOTS_DIAGNOSTIC = [
     "precommande", "prevenir", "bientot", "reapprovisionn", "disponible", "commander",
 ]
 
-TYPES_VALIDES = {"shopify", "woocommerce", "texte", "auto"}
+TYPES_VALIDES = {"shopify", "woocommerce", "prestashop", "texte", "auto"}
 
 # --------------------------------------------------------------------------- #
 # Journalisation
@@ -110,6 +120,8 @@ class Produit:
     mots_rupture: list[str] = field(default_factory=lambda: list(MOTS_RUPTURE_DEFAUT))
     mots_stock: list[str] = field(default_factory=list)
     variante: str | None = None  # ne considérer que les variantes dont le titre contient ce texte
+    prix_max: float | None = None  # au-delà, on ne signale pas (surcharge PRIX_MAX)
+    mots_explicites: bool = False  # mots_rupture / mots_stock fournis dans produits.json
     actif: bool = True
     type_detecte: str | None = None  # renseigné en mode "auto"
 
@@ -133,6 +145,12 @@ class Produit:
         if not isinstance(mots_rupture, list) or not isinstance(mots_stock, list):
             raise ValueError(f"produit '{nom}' : 'mots_rupture' et 'mots_stock' doivent être des listes")
         variante = brut.get("variante")
+        prix_max = brut.get("prix_max")
+        if prix_max is not None:
+            try:
+                prix_max = float(prix_max)
+            except (TypeError, ValueError):
+                raise ValueError(f"produit '{nom}' : 'prix_max' doit être un nombre")
         return cls(
             nom=nom,
             url=url,
@@ -140,6 +158,8 @@ class Produit:
             mots_rupture=[str(m) for m in mots_rupture],
             mots_stock=[str(m) for m in mots_stock],
             variante=str(variante).strip() if variante else None,
+            prix_max=prix_max,
+            mots_explicites=bool(brut.get("mots_rupture") or brut.get("mots_stock")),
             actif=bool(brut.get("actif", True)),
         )
 
@@ -316,10 +336,52 @@ def verifier_woocommerce(produit: Produit) -> Resultat:
     return Resultat(dispo=dispo, prix=prix, source="woocommerce")
 
 
+def verifier_prestashop(produit: Produit) -> Resultat:
+    page = telecharger_texte(produit.url)
+    m = _RE_PRESTASHOP.search(page)
+    if not m:
+        raise ErreurVerification("pas de données produit PrestaShop (data-product) dans la page")
+    try:
+        donnees = json.loads(html.unescape(m.group(1)))
+    except json.JSONDecodeError as err:
+        raise ErreurVerification("données PrestaShop illisibles") from err
+    if not isinstance(donnees, dict):
+        raise ErreurVerification("données PrestaShop inattendues")
+
+    disponibilite = str(donnees.get("availability") or "")
+    quantite = donnees.get("quantity")
+    if disponibilite:
+        dispo = disponibilite != "unavailable"
+    elif isinstance(quantite, (int, float)):
+        dispo = quantite > 0 or bool(donnees.get("allow_oosp"))
+    else:
+        raise ErreurVerification("données PrestaShop sans disponibilité")
+
+    prix: float | None = None
+    brut = donnees.get("price_amount", donnees.get("price"))
+    if isinstance(brut, (int, float)):
+        prix = float(brut)
+    elif isinstance(brut, str):
+        m_prix = re.search(r"\d+(?:[.,]\d+)?", brut.replace("\u00a0", ""))
+        if m_prix:
+            prix = float(m_prix.group(0).replace(",", "."))
+    detail = f"availability : {disponibilite or quantite}"
+    message = donnees.get("availability_message")
+    if message:
+        detail += f" ({message})"
+    return Resultat(dispo=dispo, prix=prix if prix and prix > 0 else None, detail=detail, source="prestashop")
+
+
 _RE_SCRIPT_STYLE = re.compile(r"<(script|style|noscript|template)\b.*?</\1\s*>", re.IGNORECASE | re.DOTALL)
 _RE_COMMENTAIRE = re.compile(r"<!--.*?-->", re.DOTALL)
 _RE_BALISE = re.compile(r"<[^>]+>")
 _RE_ESPACES = re.compile(r"\s+")
+_RE_PRIX_JSONLD = re.compile(r'"price"\s*:\s*"?(\d+(?:[.,]\d+)?)"?')
+_RE_SCHEMA_DISPO = re.compile(
+    r'(?:schema\.org/|"availability"\s*:\s*")(InStock|OutOfStock|SoldOut|PreOrder|BackOrder|PreSale|'
+    r'LimitedAvailability|OnlineOnly|InStoreOnly|Discontinued)\b'
+)
+_RE_PRESTASHOP = re.compile(r'data-product\s*=\s*"([^"]+)"')
 _RE_PRIX_META = re.compile(
     r"""(?:property|itemprop|name)\s*=\s*["'](?:product:price:amount|og:price:amount|price)["'][^>]*?content\s*=\s*["']([\d.,]+)["']"""
     r"""|content\s*=\s*["']([\d.,]+)["'][^>]*?(?:property|itemprop|name)\s*=\s*["'](?:product:price:amount|og:price:amount|price)["']""",
@@ -347,13 +409,35 @@ def texte_visible(page_html: str) -> str:
 
 def extraire_prix(page_html: str) -> float | None:
     m = _RE_PRIX_META.search(page_html)
-    if not m:
-        return None
-    brut = (m.group(1) or m.group(2) or "").replace(",", ".")
+    brut = (m.group(1) or m.group(2) or "") if m else ""
+    if not brut:
+        m2 = _RE_PRIX_JSONLD.search(page_html)
+        brut = m2.group(1) if m2 else ""
     try:
-        return float(brut)
+        prix = float(brut.replace(",", "."))
     except ValueError:
         return None
+    return prix if prix > 0 else None
+
+
+def disponibilite_schema(page_html: str) -> str | None:
+    """Première disponibilité schema.org trouvée (InStock, OutOfStock, PreOrder…)."""
+    m = _RE_SCHEMA_DISPO.search(page_html)
+    return m.group(1) if m else None
+
+
+SCHEMA_EN_STOCK = {"InStock", "LimitedAvailability", "OnlineOnly", "InStoreOnly", "PreOrder", "PreSale", "BackOrder"}
+
+
+def page_anti_robot(page_html: str, texte: str) -> str | None:
+    """Renvoie une raison si la page ressemble à un blocage anti-robot, sinon None."""
+    bas = page_html.lower()
+    for mot in MOTS_ANTI_ROBOT:
+        if normaliser(mot) in normaliser(bas[:20000]):
+            return f"page anti-robot (« {mot} »)"
+    if len(texte) < 300:
+        return f"page presque vide ({len(texte)} caractères visibles) : blocage ou page 100 % JavaScript"
+    return None
 
 
 def verifier_texte(produit: Produit) -> Resultat:
@@ -361,7 +445,17 @@ def verifier_texte(produit: Produit) -> Resultat:
     if not page.strip():
         raise ErreurVerification("page vide")
     texte = texte_visible(page)
+    raison = page_anti_robot(page, texte)
+    if raison:
+        raise ErreurVerification(raison)
     prix = extraire_prix(page)
+
+    # Données structurées (schema.org) : plus fiables que les mots, sauf si
+    # produits.json fournit explicitement ses propres mots.
+    schema = disponibilite_schema(page)
+    if schema and not produit.mots_explicites:
+        dispo = schema in SCHEMA_EN_STOCK
+        return Resultat(dispo=dispo, prix=prix, detail=f"schema.org : {schema}", source="texte")
 
     if produit.mots_stock:
         trouves = [m for m in produit.mots_stock if normaliser(m) in texte]
@@ -377,7 +471,7 @@ def verifier_texte(produit: Produit) -> Resultat:
 
 def verifier_auto(produit: Produit) -> Resultat:
     """Détecte le type de boutique une fois, puis le réutilise pour les cycles suivants."""
-    ordre = ["shopify", "woocommerce", "texte"]
+    ordre = ["shopify", "woocommerce", "prestashop", "texte"]
     if produit.type_detecte:
         ordre = [produit.type_detecte]
     erreurs: list[str] = []
@@ -394,6 +488,7 @@ def verifier_auto(produit: Produit) -> Resultat:
 VERIFICATEURS = {
     "shopify": verifier_shopify,
     "woocommerce": verifier_woocommerce,
+    "prestashop": verifier_prestashop,
     "texte": verifier_texte,
     "auto": verifier_auto,
 }
@@ -409,18 +504,20 @@ def verifier(produit: Produit) -> Resultat:
         return Resultat(dispo=None, detail=f"erreur inattendue {type(err).__name__} : {err}", source=produit.type)
 
 
-def extraits(texte: str, mots: list[str], marge: int = 45, maximum: int = 12) -> list[str]:
+def extraits(texte: str, mots: list[str], marge: int = 45, maximum: int = 14, par_mot: int = 2) -> list[str]:
     """Petits extraits du texte visible autour de chaque mot-clé (pour --diagnostic)."""
     resultats: list[str] = []
     deja: set[int] = set()
     for mot in mots:
         debut = 0
-        while len(resultats) < maximum:
+        trouves = 0
+        while len(resultats) < maximum and trouves < par_mot:
             pos = texte.find(normaliser(mot), debut)
             if pos < 0:
                 break
             if all(abs(pos - d) > marge for d in deja):
                 deja.add(pos)
+                trouves += 1
                 resultats.append("…" + texte[max(0, pos - marge): pos + len(mot) + marge] + "…")
             debut = pos + 1
     return resultats
@@ -446,6 +543,16 @@ def diagnostiquer(produit: Produit) -> Resultat:
         if page:
             texte = texte_visible(page)
             lignes.append(f"    page : {len(page)} caractères, texte visible {len(texte)} caractères")
+            schema = disponibilite_schema(page)
+            if schema:
+                lignes.append(f"    schema.org : {schema}")
+            if _RE_PRESTASHOP.search(page):
+                lignes.append('    indice : données PrestaShop présentes → type "prestashop"')
+            raison = page_anti_robot(page, texte)
+            if raison:
+                lignes.append(f"    ⚠️  {raison}")
+            if len(texte) < 1500:
+                lignes.append(f"    texte visible : {texte[:600]!r}")
             if "shopify" in page.lower():
                 lignes.append('    indice : la page mentionne Shopify → essaie type "shopify"')
             if "woocommerce" in page.lower() or "wp-content" in page.lower():
@@ -606,6 +713,12 @@ def executer_cycle(
             continue
 
         prix = formater_prix(resultat.prix)
+        limite = produit.prix_max if produit.prix_max is not None else PRIX_MAX
+        if resultat.dispo and limite is not None and resultat.prix is not None and resultat.prix > limite:
+            log(f"💸 trop cher    {produit.nom}  {prix} > {formater_prix(limite)} (pas d'alerte)")
+            resultat.dispo = False  # mémorisé comme « pas dispo à un prix acceptable »
+            resultat.detail = f"trop cher (> {formater_prix(limite)})"
+
         if resultat.dispo:
             nb_dispo += 1
             log(f"✅ EN STOCK   {produit.nom}" + (f"  {prix}" if prix else "") + (f"  [{resultat.detail}]" if resultat.detail else ""))

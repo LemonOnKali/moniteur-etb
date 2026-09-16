@@ -44,6 +44,9 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           DISCORD_MENTION: ${{ vars.DISCORD_MENTION }}
+          # Pas d'alerte au-dessus de ce prix (spéculateurs). Variable de dépôt
+          # PRIX_MAX pour changer, 100 € par défaut.
+          PRIX_MAX: ${{ vars.PRIX_MAX || '100' }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           PYTHONUNBUFFERED: "1"
         run: python moniteur.py
