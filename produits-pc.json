@@ -7,6 +7,16 @@
     "note": "En stock si le bouton Ajouter au panier de la boîte d'achat est présent. Prix lu dans la page, filtré par PRIX_MAX."
   },
   {
+    "nom": "Cdiscount ETB 30 ans",
+    "url": "https://www.cdiscount.com/juniors/jeux-de-societe-cartes/pokemon-etb-coffret-dresseur-d-elite-30e-anniv/f-12079160406-pok196214144835.html",
+    "type": "texte"
+  },
+  {
+    "nom": "Fnac ETB 30 ans",
+    "url": "https://www.fnac.com/Cartes-a-collectionner-Pokemon-30A-Coffret-Dresseur-d-Elite/a23200296/w-4",
+    "type": "texte"
+  },
+  {
     "nom": "Carrefour ETB 30 ans",
     "url": "https://www.carrefour.fr/p/cartes-a-jouer-et-a-collectionner-coffret-dresseur-d-elite-30e-anniversaire-pokemon-0196214144835",
     "type": "texte"

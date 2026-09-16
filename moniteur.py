@@ -49,7 +49,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import unquote, urlsplit, urlunsplit
 from urllib.request import Request, urlopen
 
 # --------------------------------------------------------------------------- #
@@ -685,7 +685,8 @@ def lister_liens(url: str) -> int:
     vus: list[str] = []
     redirections: list[str] = []  # liens internes de type /go/, /out/, affiliation…
     total = 0
-    for m in re.finditer(r'(?:href|data-href|data-url|data-link)\s*=\s*["\']([^"\'#]+)["\']', page, re.IGNORECASE):
+    raccourcis: list[str] = []  # edcol.fr/xxxx, amzn.to/xxxx, bit.ly/xxxx…
+    for m in re.finditer(r'(?:href|data-dest|data-href|data-url|data-link|data-out)\s*=\s*["\']([^"\'#]+)["\']', page, re.IGNORECASE):
         lien = html.unescape(m.group(1)).strip()
         if lien.startswith("/"):
             base = urlsplit(url)
@@ -693,7 +694,17 @@ def lister_liens(url: str) -> int:
         if not lien.startswith("http"):
             continue
         total += 1
+        # Lien d'affiliation (awin, tradedoubler…) : la vraie URL est dans un paramètre.
+        for param in re.findall(r"[?&](?:ued|url|u|dest|destination|redirect|r|link|to|target)=([^&]+)", lien, re.IGNORECASE):
+            decode = unquote(param)
+            if decode.startswith("http"):
+                lien = decode
+                break
         interne = urlsplit(lien).netloc == urlsplit(url).netloc
+        if not interne and re.fullmatch(r"/[A-Za-z0-9_-]{3,12}/?", urlsplit(lien).path) and not any(e in lien.lower() for e in ENSEIGNES_CONNUES):
+            if lien not in raccourcis:
+                raccourcis.append(lien)
+            continue
         if interne:
             if re.search(r"/(go|out|redirect|redir|aff|lien|link|track|click|deal|offre|buy|acheter)[/?-]", lien, re.IGNORECASE):
                 if lien not in redirections:
@@ -703,8 +714,8 @@ def lister_liens(url: str) -> int:
             continue
         if lien not in vus:
             vus.append(lien)
-    # Suit les redirections internes (liens affiliés) pour retrouver l'URL marchande.
-    for lien in redirections[:40]:
+    # Suit les redirections internes (liens affiliés) et les raccourcisseurs.
+    for lien in (redirections + raccourcis)[:40]:
         try:
             _, _, _, finale = telecharger(lien)
         except ErreurVerification as err:
@@ -713,7 +724,9 @@ def lister_liens(url: str) -> int:
             vus.append(f"{finale}   ← via {lien}")
     print(f"{total} lien(s) sur la page, {len(vus)} lien(s) marchand(s) trouvé(s) sur {url} :")
     for lien in vus:
-        print("  " + lien)
+        # Nettoie les paramètres de suivi pour obtenir une URL de fiche propre.
+        propre = re.sub(r"[?&](utm_[a-z]+|tag|ref|affiliate|aff|awc|pid|cid|xtor|Origin)=[^&\s]*", "", lien)
+        print("  " + propre)
     if not vus:
         hotes = sorted({urlsplit(html.unescape(m.group(1))).netloc for m in re.finditer(r'href\s*=\s*["\'](https?://[^"\'#]+)', page, re.IGNORECASE)})
         print("  aucun. Domaines liés depuis la page : " + ", ".join(hotes[:40]))
