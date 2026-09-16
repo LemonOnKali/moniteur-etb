@@ -106,5 +106,33 @@
     "nom": "Guizette Family ETB 30 ans",
     "url": "https://www.guizettefamily.com/produit/etb-30-ans-pokemon/",
     "type": "auto"
+  },
+  {
+    "nom": "1001hobbies ETB 30 ans",
+    "url": "https://www.1001hobbies.fr/jeux-de-cartes-a-jouer/892561-pokemon-company-bm-258861-pokemon-30eme-anniversaire-elite-trainer-196214144835.html",
+    "type": "auto"
+  },
+  {
+    "nom": "JouéClub ETB 30 ans",
+    "url": "https://www.joueclub.fr/pokemon/pokemon-30eme-anniversaire-coffret-dresseur-d-elite-0196214144835.html",
+    "type": "texte"
+  },
+  {
+    "nom": "La Grande Récré ETB 30 ans",
+    "url": "https://www.lagranderecre.fr/jeux-de-societe/cartes-a-collectionner/coffret-dresseur-d-elite-pokemon-30e-anniversaire.html",
+    "type": "texte"
+  },
+  {
+    "nom": "Courses U ETB 30 ans",
+    "url": "https://www.coursesu.com/p/coffret-dresseur-asmodee/1833259.html",
+    "type": "texte"
+  },
+  {
+    "nom": "Cultura ETB 30 ans (recherche EAN)",
+    "url": "https://www.cultura.com/search/results?search_query=0196214144835",
+    "type": "texte",
+    "mots_stock": [
+      "ajouter au panier"
+    ]
   }
 ]
