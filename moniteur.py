@@ -20,6 +20,7 @@ Variables d'environnement :
   DISCORD_WEBHOOK       URL du webhook Discord (jamais dans le code !)
   DISCORD_MENTION       optionnel, ex. "@everyone" ou "<@&ID_DU_ROLE>"
   PRIX_MAX              optionnel, ne pas alerter au-dessus de ce prix en euros (anti-spéculateurs)
+  ANTI_SPAM_MINUTES     délai minimal entre deux alertes pour un même produit (défaut 10)
   GITHUB_EVENT_NAME     fourni par GitHub Actions ("workflow_dispatch" = lancement manuel)
   DUREE_MINUTES         durée totale d'une exécution (défaut 20)
   INTERVALLE_SECONDES   délai entre deux cycles (défaut 60)
@@ -83,6 +84,10 @@ MOTS_RUPTURE_DEFAUT = ["rupture", "épuisé", "indisponible", "sold out", "plus 
 # Au-delà de ce prix (en euros), un produit en stock n'est pas signalé (revendeurs
 # spéculateurs). Vide = pas de limite. Surchargeable par produit avec "prix_max".
 PRIX_MAX = float(os.environ.get("PRIX_MAX") or 0) or None
+
+# Certaines pages oscillent (cache) : pas deux alertes pour un même produit
+# à moins de ANTI_SPAM_MINUTES d'intervalle.
+ANTI_SPAM_MINUTES = float(os.environ.get("ANTI_SPAM_MINUTES") or 10)
 
 # Signes d'une page anti-robot (captcha, blocage) : on préfère une erreur claire
 # à une fausse détection.
@@ -207,8 +212,8 @@ def _decompresser(donnees: bytes, encodage: str) -> bytes:
     return donnees
 
 
-def telecharger(url: str, accept: str = "*/*") -> tuple[int, bytes, str]:
-    """Télécharge `url` et renvoie (code HTTP, corps décompressé, charset).
+def telecharger(url: str, accept: str = "*/*") -> tuple[int, bytes, str, str]:
+    """Télécharge `url` et renvoie (code HTTP, corps décompressé, charset, URL finale).
 
     Réessaie une fois sur erreur réseau ou erreur 5xx / 429. Lève
     ErreurVerification avec un message lisible sinon.
@@ -228,7 +233,7 @@ def telecharger(url: str, accept: str = "*/*") -> tuple[int, bytes, str]:
             with urlopen(requete, timeout=TIMEOUT_SECONDES) as reponse:
                 corps = _decompresser(reponse.read(), reponse.headers.get("Content-Encoding", ""))
                 charset = reponse.headers.get_content_charset() or "utf-8"
-                return reponse.status, corps, charset
+                return reponse.status, corps, charset, reponse.geturl()
         except HTTPError as err:
             if err.code in (429, 500, 502, 503, 504) and tentative < TENTATIVES_HTTP:
                 derniere_erreur = err
@@ -245,7 +250,7 @@ def telecharger(url: str, accept: str = "*/*") -> tuple[int, bytes, str]:
 
 
 def telecharger_json(url: str) -> Any:
-    _, corps, charset = telecharger(url, accept="application/json,text/javascript;q=0.9,*/*;q=0.1")
+    _, corps, charset, _ = telecharger(url, accept="application/json,text/javascript;q=0.9,*/*;q=0.1")
     try:
         return json.loads(corps.decode(charset, errors="replace"))
     except json.JSONDecodeError as err:
@@ -253,11 +258,28 @@ def telecharger_json(url: str) -> Any:
 
 
 def telecharger_texte(url: str) -> str:
-    _, corps, charset = telecharger(url, accept="text/html,application/xhtml+xml,*/*;q=0.8")
+    """Télécharge une page HTML. Lève une erreur si le site redirige vers une autre
+    fiche (produit retiré → page catégorie, par exemple)."""
+    _, corps, charset, url_finale = telecharger(url, accept="text/html,application/xhtml+xml,*/*;q=0.8")
+    if redirection_suspecte(url, url_finale):
+        raise ErreurVerification(f"redirigé vers {url_finale} (fiche retirée ?)")
     try:
         return corps.decode(charset, errors="replace")
     except LookupError:
         return corps.decode("utf-8", errors="replace")
+
+
+def redirection_suspecte(url_demandee: str, url_finale: str) -> bool:
+    """Vrai si la redirection change de page (les identifiants numériques de l'URL
+    d'origine ont disparu), et pas seulement de forme (http → https, www, slash)."""
+    chemin_avant = urlsplit(url_demandee).path.rstrip("/")
+    chemin_apres = urlsplit(url_finale).path.rstrip("/")
+    if chemin_avant == chemin_apres:
+        return False
+    identifiants = re.findall(r"\d{4,}", chemin_avant)
+    if identifiants:
+        return not all(i in chemin_apres for i in identifiants)
+    return not chemin_apres.startswith(chemin_avant) and not chemin_avant.startswith(chemin_apres)
 
 
 # --------------------------------------------------------------------------- #
@@ -392,8 +414,9 @@ _RE_BALISE = re.compile(r"<[^>]+>")
 _RE_ESPACES = re.compile(r"\s+")
 _RE_PRIX_JSONLD = re.compile(r'"price"\s*:\s*"?(\d+(?:[.,]\d+)?)"?')
 _RE_SCHEMA_DISPO = re.compile(
-    r'(?:schema\.org/|"availability"\s*:\s*")(InStock|OutOfStock|SoldOut|PreOrder|BackOrder|PreSale|'
-    r'LimitedAvailability|OnlineOnly|InStoreOnly|Discontinued)\b'
+    r'(?:schema\.org/|availability["\']?\s*(?:content\s*=|:)\s*["\']?(?:https?://schema\.org/)?)'
+    r'(InStock|OutOfStock|SoldOut|PreOrder|BackOrder|PreSale|LimitedAvailability|OnlineOnly|InStoreOnly|Discontinued)\b',
+    re.IGNORECASE,
 )
 _RE_PRESTASHOP = re.compile(r'data-product\s*=\s*"(\{[^"]*)"')  # objet JSON échappé (&quot;)
 _RE_BRUT_DIAG = re.compile(r'.{0,70}(?:availability|in_?stock|outofstock|"stock|quantity"|indisponible|[ée]puis[ée]|rupture|dispo(?!nibilit)).{0,70}', re.IGNORECASE)
@@ -438,10 +461,14 @@ def extraire_prix(page_html: str) -> float | None:
 def disponibilite_schema(page_html: str) -> str | None:
     """Première disponibilité schema.org trouvée (InStock, OutOfStock, PreOrder…)."""
     m = _RE_SCHEMA_DISPO.search(page_html)
-    return m.group(1) if m else None
+    if not m:
+        return None
+    valeur = m.group(1)
+    return next((v for v in SCHEMA_VALEURS if v.lower() == valeur.lower()), valeur)
 
 
 SCHEMA_EN_STOCK = {"InStock", "LimitedAvailability", "OnlineOnly", "InStoreOnly", "PreOrder", "PreSale", "BackOrder"}
+SCHEMA_VALEURS = SCHEMA_EN_STOCK | {"OutOfStock", "SoldOut", "Discontinued"}
 
 
 def page_anti_robot(page_html: str, texte: str) -> str | None:
@@ -580,11 +607,15 @@ def diagnostiquer(produit: Produit) -> Resultat:
             if len(texte) < 1500:
                 lignes.append(f"    texte visible : {texte[:600]!r}")
             for ident in sorted(set(re.findall(r"\d{4,}", urlsplit(produit.url).path)), key=len, reverse=True)[:2]:
-                for k, m in enumerate(re.finditer(re.escape(ident), page)):
-                    if k >= 3:
-                        break
-                    ctx = " ".join(page[max(0, m.start() - 220): m.end() + 220].split())
+                montres = 0
+                for m in re.finditer(re.escape(ident), page):
+                    ctx = " ".join(page[max(0, m.start() - 250): m.end() + 250].split())
+                    if not re.search(r"_id|stock|quantit|price|prix|dispo|avail", ctx, re.IGNORECASE):
+                        continue
                     lignes.append(f"    #{ident} : {ctx}")
+                    montres += 1
+                    if montres >= 5:
+                        break
             bruts = []
             for m in _RE_BRUT_DIAG.finditer(page):
                 extrait = " ".join(m.group(0).split())
@@ -760,12 +791,23 @@ def executer_cycle(
             resultat.dispo = False  # mémorisé comme « pas dispo à un prix acceptable »
             resultat.detail = f"trop cher (> {formater_prix(limite)})"
 
+        derniere_alerte = precedent.get("alerte")
         if resultat.dispo:
             nb_dispo += 1
             log(f"✅ EN STOCK   {produit.nom}" + (f"  {prix}" if prix else "") + (f"  [{resultat.detail}]" if resultat.detail else ""))
-            if dispo_avant is not True:
+            recente = False
+            if dispo_avant is not True and derniere_alerte:
+                try:
+                    ecart = datetime.now(timezone.utc) - datetime.fromisoformat(derniere_alerte)
+                    recente = ecart.total_seconds() < ANTI_SPAM_MINUTES * 60
+                except ValueError:
+                    recente = False
+            if dispo_avant is not True and recente:
+                log(f"🔕 {produit.nom} : déjà signalé il y a moins de {ANTI_SPAM_MINUTES:.0f} min, pas de nouvelle alerte")
+            elif dispo_avant is not True:
                 if envoyer_discord(message_en_stock(produit, resultat), mention=True):
                     log(f"🔔 Alerte Discord envoyée pour {produit.nom}")
+                    derniere_alerte = maintenant
         else:
             nb_rupture += 1
             log(f"⛔ rupture     {produit.nom}" + (f"  {prix}" if prix else "") + (f"  [{resultat.detail}]" if resultat.detail else ""))
@@ -776,6 +818,7 @@ def executer_cycle(
             "nom": produit.nom,
             "dispo": resultat.dispo,
             "prix": resultat.prix,
+            "alerte": derniere_alerte,
             "source": resultat.source if produit.type != "auto" else (produit.type_detecte or "auto"),
             "vu": maintenant,
         }

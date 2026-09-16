@@ -27,63 +27,68 @@
   {
     "nom": "Pokezenith ETB 30 ans",
     "url": "https://www.pokezenith.com/me055-30e-anniversaire/459-pokemon-coffret-dresseur-d-elite-etb-me055-30e-anniversaire-196214144835.html",
-    "type": "auto"
+    "type": "prestashop"
   },
   {
     "nom": "Foxchip ETB 30 ans",
     "url": "https://www.foxchip-collector.com/fr/coffrets-dresseur-d-elite-etb/81311-coffret-dresseur-d-elite-pokemon-30e-anniversaire-0196214144835.html",
-    "type": "auto"
+    "type": "prestashop"
   },
   {
     "nom": "Les Gentlemen du Jeu ETB 30 ans",
     "url": "https://lesgentlemendujeu.com/pokemon-30-ans-30eme-anniversaire/12617-pokemon-30-ans-coffret-dresseur-d-elite-etb-30eme-anniversaire-0196214144835.html",
-    "type": "auto"
+    "type": "prestashop"
   },
   {
     "nom": "BCD Jeux ETB 30 ans",
     "url": "https://www.bcd-jeux.fr/pokemon-tcg/39006-pokemon-anniversaire-30-ans-coffret-etb-dresseur-d-elite-pokemon.html",
-    "type": "auto"
+    "type": "prestashop"
   },
   {
     "nom": "Pokesumo ETB 30 ans",
     "url": "https://pokesumo.com/pokemon-jcc/15513-coffret-dresseur-d-elite-30-anniversaire-etb.html",
-    "type": "auto"
+    "type": "prestashop"
   },
   {
     "nom": "Ludocortex ETB 30 ans",
     "url": "https://www.ludocortex.fr/pokemon-tcg/18606-pokemon-30-ans-coffret-dresseur-d-elite.html",
-    "type": "auto"
+    "type": "prestashop"
   },
   {
     "nom": "Play-in ETB 30 ans",
     "url": "https://www.play-in.com/fr/produit/659570/coffret-dresseur-d-elite-etb-30-ans-pokemon-fr",
-    "type": "auto"
+    "type": "texte"
   },
   {
     "nom": "Philibert ETB 30 ans",
     "url": "https://www.philibertnet.com/fr/pokemon/181759-pokemon-30-ans-coffret-dresseur-d-elite-2100001405977.html",
-    "type": "auto"
+    "type": "texte",
+    "note": "Philibert redirige la fiche vers la catégorie tant que le produit est retiré : erreur normale."
   },
   {
     "nom": "UltraJeux ETB 30 ans",
     "url": "https://www.ultrajeux.com/produit-32960-etb-coffret-dresseur-d-elite-pokemon-30e-anniversaire-0196214144835.html",
-    "type": "auto"
+    "type": "texte"
   },
   {
     "nom": "Au Dé Mon du Jeu ETB 30 ans",
     "url": "https://www.audemondujeu.com/article,pokemon-30ans-coffret-dresseur-d-elite-30eme-anniversaire-8-12-12690.html",
-    "type": "auto"
+    "type": "texte",
+    "regex_rupture": "class=\"dispoFiche\"[^>]*>\\s*RUPTURE"
   },
   {
     "nom": "Smartoys (Belgique) ETB 30 ans",
     "url": "https://www.smartoys.be/catalog/trading-cards-pokemon-pokemon-jcc-coffret-dresseur-delite-30e-anniversaire-p-0196214144835.html",
-    "type": "auto"
+    "type": "texte",
+    "regex_rupture": "non disponible online"
   },
   {
     "nom": "Amazon ETB 30 ans",
     "url": "https://www.amazon.fr/dp/B0H8SVJL9F",
     "type": "texte",
-    "mots_stock": ["ajouter au panier"],
+    "mots_stock": [
+      "ajouter au panier"
+    ],
     "actif": false,
     "note": "Amazon bloque les robots depuis les serveurs GitHub (captcha)."
   },
