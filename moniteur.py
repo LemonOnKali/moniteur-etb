@@ -381,7 +381,8 @@ _RE_SCHEMA_DISPO = re.compile(
     r'(?:schema\.org/|"availability"\s*:\s*")(InStock|OutOfStock|SoldOut|PreOrder|BackOrder|PreSale|'
     r'LimitedAvailability|OnlineOnly|InStoreOnly|Discontinued)\b'
 )
-_RE_PRESTASHOP = re.compile(r'data-product\s*=\s*"([^"]+)"')
+_RE_PRESTASHOP = re.compile(r'data-product\s*=\s*"(\{[^"]*)"')  # objet JSON échappé (&quot;)
+_RE_BRUT_DIAG = re.compile(r'.{0,60}(?:availability|in_stock|instock|outofstock|"stock|quantity"|indisponible|epuise|rupture|oos).{0,60}', re.IGNORECASE)
 _RE_PRIX_META = re.compile(
     r"""(?:property|itemprop|name)\s*=\s*["'](?:product:price:amount|og:price:amount|price)["'][^>]*?content\s*=\s*["']([\d.,]+)["']"""
     r"""|content\s*=\s*["']([\d.,]+)["'][^>]*?(?:property|itemprop|name)\s*=\s*["'](?:product:price:amount|og:price:amount|price)["']""",
@@ -553,6 +554,15 @@ def diagnostiquer(produit: Produit) -> Resultat:
                 lignes.append(f"    ⚠️  {raison}")
             if len(texte) < 1500:
                 lignes.append(f"    texte visible : {texte[:600]!r}")
+            bruts = []
+            for m in _RE_BRUT_DIAG.finditer(page):
+                extrait = " ".join(m.group(0).split())
+                if extrait not in bruts:
+                    bruts.append(extrait)
+                if len(bruts) >= 10:
+                    break
+            for extrait in bruts:
+                lignes.append(f"    ~ {extrait}")
             if "shopify" in page.lower():
                 lignes.append('    indice : la page mentionne Shopify → essaie type "shopify"')
             if "woocommerce" in page.lower() or "wp-content" in page.lower():
