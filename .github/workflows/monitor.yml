@@ -2,8 +2,10 @@ name: Moniteur de stock
 
 on:
   schedule:
-    # Toutes les 15 min (UTC). Chaque exécution surveille pendant 20 min,
-    # les exécutions s'enchaînent donc sans trou grâce au groupe de concurrence.
+    # Toutes les 15 min (UTC). GitHub retarde ou saute souvent les crons :
+    # chaque exécution surveille donc pendant ~6 h (le maximum autorisé) et
+    # la suivante, mise en attente par le groupe de concurrence, prend le
+    # relais dès qu'elle se termine. Couverture quasi continue.
     - cron: "*/15 * * * *"
   workflow_dispatch:
 
@@ -19,7 +21,7 @@ jobs:
   moniteur:
     name: Surveillance des produits
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 360
 
     steps:
       - name: Récupérer le dépôt
@@ -47,6 +49,9 @@ jobs:
           # Pas d'alerte au-dessus de ce prix (spéculateurs). Variable de dépôt
           # PRIX_MAX pour changer, 100 € par défaut.
           PRIX_MAX: ${{ vars.PRIX_MAX || '100' }}
+          # Durée d'une exécution (minutes) et délai entre deux vérifications (s).
+          DUREE_MINUTES: ${{ vars.DUREE_MINUTES || '350' }}
+          INTERVALLE_SECONDES: ${{ vars.INTERVALLE_SECONDES || '60' }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           PYTHONUNBUFFERED: "1"
         run: python moniteur.py
