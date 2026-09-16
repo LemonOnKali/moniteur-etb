@@ -520,6 +520,13 @@ def verifier_texte(produit: Produit) -> Resultat:
     trouves = [m for m in produit.mots_rupture if normaliser(m) in texte]
     if trouves:
         return Resultat(dispo=False, prix=prix, detail=f"mot de rupture : « {trouves[0]} »", source="texte")
+    if len(texte) < 1500:
+        # Aucun signal positif et presque pas de texte : page rendue en JavaScript.
+        # On refuse de conclure « en stock » sur une absence de preuve.
+        raise ErreurVerification(
+            f"page rendue en JavaScript ({len(texte)} caractères visibles) : impossible de conclure, "
+            "utilise regex_stock / mots_stock"
+        )
     return Resultat(dispo=True, prix=prix, detail="aucun mot de rupture", source="texte")
 
 
