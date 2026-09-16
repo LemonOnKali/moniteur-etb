@@ -346,7 +346,7 @@ def verifier_shopify(produit: Produit) -> Resultat:
 
     return Resultat(
         dispo=dispo,
-        prix=prix_centimes / 100 if prix_centimes is not None else None,
+        prix=prix_centimes / 100 if prix_centimes else None,  # 0 = prix non renseigné
         detail=detail,
         source="shopify",
     )
@@ -375,7 +375,7 @@ def verifier_woocommerce(produit: Produit) -> Resultat:
             prix = int(brut) / (10**unite)
     except (TypeError, ValueError):
         prix = None
-    return Resultat(dispo=dispo, prix=prix, source="woocommerce")
+    return Resultat(dispo=dispo, prix=prix if prix else None, source="woocommerce")
 
 
 def verifier_prestashop(produit: Produit) -> Resultat:
