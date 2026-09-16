@@ -91,7 +91,10 @@ ANTI_SPAM_MINUTES = float(os.environ.get("ANTI_SPAM_MINUTES") or 10)
 
 # Signes d'une page anti-robot (captcha, blocage) : on préfère une erreur claire
 # à une fausse détection.
-MOTS_ANTI_ROBOT = ["captcha", "automated access", "are you a human", "access denied", "êtes-vous un robot", "verify you are human"]
+MOTS_ANTI_ROBOT = [
+    "captcha", "automated access", "are you a human", "access denied", "êtes-vous un robot",
+    "verify you are human", "pardon our interruption", "think you were a bot", "just a moment",
+]
 
 # Mots autour desquels le mode --diagnostic affiche des extraits de page,
 # pour choisir les bons mots_rupture / mots_stock d'une nouvelle boutique.

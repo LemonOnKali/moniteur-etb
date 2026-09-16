@@ -40,8 +40,9 @@ Ecardstore, PixelHeart, Guizette Family (WooCommerce) · Foxchip, Les Gentlemen 
 Pokesumo, Ludocortex, Pokezenith, Plaza TCG, Fantastik, 1001hobbies (PrestaShop) ·
 UltraJeux, Au Dé Mon du Jeu, Smartoys, Philibert, JouéClub, La Grande Récré (page HTML).
 
-Les grandes enseignes (Amazon, Fnac, Cdiscount, Carrefour, Smyths, Cultura,
-Courses U) bloquent les robots venant des serveurs GitHub. Elles sont
+Amazon, Carrefour et Courses U bloquent les serveurs GitHub mais répondent
+depuis une box internet. Fnac, Cdiscount et Smyths exigent un vrai navigateur
+et restent hors de portée (entrées désactivées). Elles sont
 dans `produits-pc.json`, surveillé par le workflow **Moniteur de stock (PC)** qui
 tourne sur ton propre ordinateur (voir ci-dessous).
 
