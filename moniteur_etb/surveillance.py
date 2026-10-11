@@ -158,6 +158,8 @@ class Surveillance:
         futurs: dict[Any, Boutique | Produit] = {}
         for b in self.boutiques:
             decouvrir = forcer_decouverte or b.decouverte_due(intervalle_decouverte)
+            if not decouvrir and not b.verification_due():
+                continue
             futurs[executeur.submit(analyser, b, self.collection, self.reglages.langues, decouvrir)] = b
         for p in self.produits:
             futurs[executeur.submit(self.offre_produit, p)] = p

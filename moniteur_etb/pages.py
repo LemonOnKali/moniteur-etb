@@ -303,7 +303,11 @@ def lire_prestashop_16(page: str) -> Resultat:
 
 
 def verifier_prestashop(produit: Produit) -> Resultat:
-    page = telecharger_page(produit.url)
+    return lire_page_prestashop(telecharger_page(produit.url))
+
+
+def lire_page_prestashop(page: str) -> Resultat:
+    """Fiche PrestaShop déjà téléchargée : data-product (1.7+), sinon variables JavaScript (1.6)."""
     m = _RE_PRESTASHOP.search(page)
     if not m:
         return lire_prestashop_16(page)
@@ -402,7 +406,11 @@ def page_anti_robot(page_html: str, texte: str) -> str | None:
 
 
 def verifier_texte(produit: Produit) -> Resultat:
-    page = telecharger_page(produit.url)
+    return lire_page_texte(produit, telecharger_page(produit.url))
+
+
+def lire_page_texte(produit: Produit, page: str) -> Resultat:
+    """Page HTML déjà téléchargée : données structurées, regex, puis mots du texte visible."""
     if not page.strip():
         raise ErreurVerification("page vide")
     texte = texte_visible(page)

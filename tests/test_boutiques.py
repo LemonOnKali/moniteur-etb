@@ -151,7 +151,7 @@ class TestAnalyse(unittest.TestCase):
         )
         web = FauxWeb({"ajax=1": "pas du json", "controller=search": recherche, "12617-etb-30.html": fiche})
         b = Boutique(nom="Presta", url="https://p.fr", plateforme="prestashop")
-        with web.actif(), mock.patch("moniteur_etb.pages.telecharger_page", lambda url: web.telecharger(url).texte()):
+        with web.actif(), mock.patch("moniteur_etb.boutiques.telecharger_page", lambda url: web.telecharger(url).texte()):
             a = analyser(b, COLLECTION, FR, decouvrir=True)
             self.assertTrue(b.presta_html)
             self.assertEqual([(o.item.id, o.dispo, o.prix) for o in a.offres], [("etb", True, 69.9)])

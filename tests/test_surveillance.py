@@ -1,4 +1,5 @@
 import os
+import time
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from unittest import mock
@@ -95,6 +96,16 @@ class TestCycle(unittest.TestCase):
         self.cycle(offre(dispo=False))
         self.cycle(offre(dispo=True))  # oscillation de cache : pas de 2e alerte tout de suite
         self.assertEqual(len(self.discord.messages), 1)
+
+
+class TestRythme(unittest.TestCase):
+    def test_boutique_lue_fiche_par_fiche_menagee(self):
+        b = Boutique(nom="Presta", url="https://p.fr", presta_html=True)
+        self.assertTrue(b.verification_due())
+        b.derniere_verification = time.monotonic()
+        self.assertFalse(b.verification_due())
+        b.intervalle = 0
+        self.assertTrue(b.verification_due())
 
 
 class TestDiscordPaquets(unittest.TestCase):

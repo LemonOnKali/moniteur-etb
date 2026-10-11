@@ -134,6 +134,7 @@ dans `produits.json`.
 | `categories` | Shopify : handles des catégories à surveiller, si la détection automatique ne les trouve pas. |
 | `recherches` | Termes de recherche propres à cette boutique (défaut : ceux de `collection.json`). |
 | `prix_max` | Plafond pour toute la boutique (remplace ceux de `collection.json`). |
+| `intervalle_secondes` | Délai minimal entre deux vérifications de cette boutique (défaut : chaque cycle ; 120 s pour une boutique lue fiche par fiche). |
 | `actif` | `false` pour mettre la boutique en pause. |
 
 **Autre site** : ajoute la fiche dans `produits.json` :

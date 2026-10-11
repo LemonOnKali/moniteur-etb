@@ -26,21 +26,22 @@ from typing import Any, Callable
 from urllib.parse import quote, urlsplit, urlunsplit
 
 from .collection import Classement, Collection, langue, langue_acceptee
-from .http import ACCEPT_HTML, ErreurHTTP, ErreurVerification, en_pause, telecharger, telecharger_json
+from .http import ACCEPT_HTML, ErreurHTTP, ErreurVerification, en_pause, telecharger, telecharger_json, telecharger_page
 from .modeles import Fiche, Offre, cle_url
 from .pages import (
     Produit,
-    verifier_texte,
+    lire_page_prestashop,
+    lire_page_texte,
     api_woocommerce,
     lire_produit_prestashop,
     lire_produit_woocommerce,
     url_absolue,
-    verifier_prestashop,
 )
 from .texte import lire_prix, mots
 
 PLATEFORMES = {"shopify", "woocommerce", "prestashop", "auto"}
 MAX_FICHES_PAGE = 20  # PrestaShop sans recherche JSON : fiches lues une à une, au plus
+PRESTA_HTML_INTERVALLE_S = 120  # … et vérifiées moins souvent que les autres
 # Délai entre deux recherches d'une même boutique pendant la découverte :
 # la recherche Shopify (search/suggest.json) répond 429 au-delà de ~5 requêtes en rafale.
 ESPACEMENT_S = {"shopify": 2.5, "woocommerce": 0.5, "prestashop": 0.5}
@@ -58,6 +59,7 @@ class Boutique:
     categories: list[str] = field(default_factory=list)  # handles Shopify imposés
     recherches: list[str] | None = None  # termes ; None = ceux de collection.json
     prix_max: float | None = None
+    intervalle: float | None = None  # secondes entre deux vérifications (défaut : chaque cycle)
     actif: bool = True
 
     # État d'exécution (non configurable)
@@ -69,6 +71,7 @@ class Boutique:
     presta_html: bool = False  # PrestaShop sans recherche JSON : fiches lues une à une
     note: str = ""  # remarque de détection affichée par --diagnostic
     derniere_decouverte: float | None = None
+    derniere_verification: float | None = None
     derniere_erreur: str = ""
 
     @classmethod
@@ -88,11 +91,11 @@ class Boutique:
         recherches = brut.get("recherches")
         if not isinstance(categories, list) or (recherches is not None and not isinstance(recherches, list)):
             raise ValueError(f"boutique '{nom}' : 'categories' et 'recherches' doivent être des listes")
-        prix_max = brut.get("prix_max")
         try:
-            prix_max = float(prix_max) if prix_max is not None else None
+            prix_max = float(brut["prix_max"]) if brut.get("prix_max") is not None else None
+            intervalle = float(brut["intervalle_secondes"]) if brut.get("intervalle_secondes") is not None else None
         except (TypeError, ValueError):
-            raise ValueError(f"boutique '{nom}' : 'prix_max' doit être un nombre") from None
+            raise ValueError(f"boutique '{nom}' : 'prix_max' et 'intervalle_secondes' doivent être des nombres") from None
         return cls(
             nom=nom,
             url=url,
@@ -100,6 +103,7 @@ class Boutique:
             categories=[str(c).strip() for c in categories if str(c).strip()],
             recherches=[str(r) for r in recherches] if recherches is not None else None,
             prix_max=prix_max,
+            intervalle=intervalle,
             actif=bool(brut.get("actif", True)),
         )
 
@@ -110,6 +114,11 @@ class Boutique:
 
     def decouverte_due(self, intervalle_s: float) -> bool:
         return self.derniere_decouverte is None or time.monotonic() - self.derniere_decouverte >= intervalle_s
+
+    def verification_due(self) -> bool:
+        """Les boutiques lues fiche par fiche sont ménagées : une vérification toutes les 2 min."""
+        intervalle = self.intervalle if self.intervalle is not None else (PRESTA_HTML_INTERVALLE_S if self.presta_html else 0)
+        return self.derniere_verification is None or time.monotonic() - self.derniere_verification >= intervalle - 1
 
 
 # --------------------------------------------------------------------------- #
@@ -349,13 +358,12 @@ def _presta_html(b: Boutique, url: str) -> list[Fiche]:
 
 
 def _presta_fiche_page(url: str, titre: str) -> Fiche:
-    produit = Produit(nom=titre or url, url=url, type="prestashop")
+    page = telecharger_page(url)
     try:
-        r = verifier_prestashop(produit)
+        r = lire_page_prestashop(page)
     except ErreurVerification:
-        if en_pause(url):
-            raise
-        r = verifier_texte(produit)  # thème sans données produit : schema.org, mots de rupture…
+        # Thème sans données produit : schema.org, mots de rupture… sur la même page.
+        r = lire_page_texte(Produit(nom=titre or url, url=url, type="texte"), page)
     return Fiche(
         cle=cle_url(url), url=url, titre=r.titre or titre, dispo=bool(r.dispo), prix=r.prix,
         image=r.image, quantite=r.quantite, detail=r.detail, ref=url,
@@ -439,6 +447,7 @@ def analyser(b: Boutique, collection: Collection, langues: frozenset[str], decou
         return analyse
     decouvrir = decouvrir or b.derniere_decouverte is None
     analyse.decouverte = decouvrir
+    b.derniere_verification = time.monotonic()
     try:
         if b.detectee is None:
             analyse.requetes += 1
