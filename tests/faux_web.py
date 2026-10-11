@@ -23,10 +23,10 @@ class FauxWeb:
                 return reponse
         raise ErreurHTTP(404, "Not Found")
 
-    def telecharger_json(self, url: str, ajax: bool = False) -> Any:
+    def telecharger_json(self, url: str, ajax: bool = False, pause: bool = True) -> Any:
         return self._trouver(url)
 
-    def telecharger(self, url: str, accept: str = "*/*", ajax: bool = False) -> Reponse:
+    def telecharger(self, url: str, accept: str = "*/*", ajax: bool = False, pause: bool = True) -> Reponse:
         corps = self._trouver(url)
         texte = corps if isinstance(corps, str) else json.dumps(corps)
         return Reponse(code=200, corps=texte.encode(), charset="utf-8", url=url, type="text/html")

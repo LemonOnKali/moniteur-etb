@@ -4,7 +4,7 @@ from unittest import mock
 
 from moniteur_etb.boutiques import Boutique, analyser, couverture, fiche_prestashop, fiche_shopify, fiche_woocommerce
 from moniteur_etb.collection import Collection
-from moniteur_etb.http import PAUSES
+from moniteur_etb.http import PAUSES, ErreurHTTP, en_pause
 
 from faux_web import FauxWeb
 
@@ -176,6 +176,24 @@ class TestAnalyse(unittest.TestCase):
         self.assertEqual(b.categories_trouvees, ["pokemon-30-ans"])
         recherches = [u for u in web.appels if "suggest" in u]
         self.assertEqual(len(recherches), 3)  # catégorie trouvée : 3 recherches seulement
+
+    def test_limite_de_recherche_shopify(self):
+        # 429 sur la recherche : pas de pause de la boutique, fiches déjà connues gardées.
+        web = FauxWeb({
+            "/collections.json": {"collections": []},
+            "suggest.json?q=anniversaire": {"resources": {"results": {"products": [
+                {"handle": "etb", "title": "ETB 30 ans", "available": False, "price": "69.90"}]}}},
+            "suggest.json": ErreurHTTP(429, "Too Many Requests"),
+            "/products/etb": {"handle": "etb", "title": "ETB 30 ans", "variants": []},
+        })
+        b = Boutique(nom="Test", url="https://shop.fr", plateforme="shopify")
+        with web.actif():
+            a = analyser(b, COLLECTION, FR, decouvrir=True)
+        self.assertEqual(a.erreurs, [])
+        self.assertIn("429", b.note)
+        self.assertEqual([o.item.id for o in a.offres], ["etb"])
+        self.assertFalse(en_pause("https://shop.fr"))
+        self.assertEqual(b.sources, {"recherche:anniversaire": {"shop.fr/products/etb"}})
 
     def test_detection_automatique(self):
         web = FauxWeb({"/products.json?limit=1": {"products": []}, "/collections.json": {"collections": []},

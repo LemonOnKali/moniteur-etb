@@ -30,5 +30,18 @@ class TestTexte(unittest.TestCase):
         self.assertEqual(formater_prix(None), "")
 
 
+class TestPrestashop16(unittest.TestCase):
+    def test_variables_js(self):
+        from moniteur_etb.pages import lire_prestashop_16
+
+        page = ('<meta property="og:title" content="Coffret Dresseur d&#039;Élite 30 ans">'
+                "<script>var productAvailableForOrder=true;var quantityAvailable=0;"
+                "var allowBuyWhenOutOfStock=false;var productPrice=69.9;</script>")
+        r = lire_prestashop_16(page)
+        self.assertEqual((r.dispo, r.prix, r.titre), (False, 69.9, "Coffret Dresseur d'Élite 30 ans"))
+        r = lire_prestashop_16(page.replace("quantityAvailable=0", "quantityAvailable=4"))
+        self.assertEqual((r.dispo, r.quantite), (True, 4))
+
+
 if __name__ == "__main__":
     unittest.main()

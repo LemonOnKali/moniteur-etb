@@ -277,11 +277,36 @@ def _image_prestashop(couverture: Any) -> str | None:
     return str(grande["url"]) if isinstance(grande, dict) and grande.get("url") else None
 
 
+def _var_js(page: str, nom: str) -> str | None:
+    m = re.search(rf"\bvar\s+{nom}\s*=\s*([^;]+);", page)
+    return m.group(1).strip().strip("'\"") if m else None
+
+
+def lire_prestashop_16(page: str) -> Resultat:
+    """PrestaShop 1.6 : la fiche expose son stock dans des variables JavaScript."""
+    quantite = _var_js(page, "quantityAvailable")
+    if quantite is None or not re.fullmatch(r"-?\d+", quantite):
+        raise ErreurVerification("pas de données produit PrestaShop (data-product ni quantityAvailable) dans la page")
+    commandable = _var_js(page, "productAvailableForOrder") not in ("false", "0")
+    hors_stock_ok = _var_js(page, "allowBuyWhenOutOfStock") in ("true", "1")
+    q = int(quantite)
+    m_titre = _RE_OG_TITRE.search(page)
+    return Resultat(
+        dispo=commandable and (q > 0 or hors_stock_ok),
+        prix=lire_prix(_var_js(page, "productPrice")) or extraire_prix(page),
+        detail=f"PrestaShop 1.6 : quantityAvailable={q}" + ("" if commandable else " (non commandable)"),
+        source="prestashop",
+        image=image_og(page),
+        quantite=q if q > 0 else None,
+        titre=html.unescape(m_titre.group(1)) if m_titre else None,
+    )
+
+
 def verifier_prestashop(produit: Produit) -> Resultat:
     page = telecharger_page(produit.url)
     m = _RE_PRESTASHOP.search(page)
     if not m:
-        raise ErreurVerification("pas de données produit PrestaShop (data-product) dans la page")
+        return lire_prestashop_16(page)
     try:
         donnees = json.loads(html.unescape(m.group(1)))
     except json.JSONDecodeError as err:
@@ -314,6 +339,7 @@ _RE_SCHEMA_DISPO = re.compile(
 _RE_WEBSTORE = re.compile(r'"webStore"\s*:\s*\{\s*"available"\s*:\s*(true|false)', re.IGNORECASE)
 _RE_WEBSTORE_TITRE = re.compile(r'"thresholdTitle"\s*:\s*"([^"]{1,60})"')
 _RE_TITRE = re.compile(r"<title[^>]*>(.*?)</title>", re.IGNORECASE | re.DOTALL)
+_RE_OG_TITRE = re.compile(r"""<meta[^>]+property\s*=\s*["']og:title["'][^>]*content\s*=\s*["']([^"']+)["']""", re.IGNORECASE)
 _RE_OG_IMAGE = re.compile(
     r"""<meta[^>]+property\s*=\s*["']og:image["'][^>]*content\s*=\s*["']([^"']+)["']"""
     r"""|<meta[^>]+content\s*=\s*["']([^"']+)["'][^>]*property\s*=\s*["']og:image["']""",

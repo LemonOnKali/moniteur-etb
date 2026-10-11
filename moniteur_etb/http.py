@@ -144,11 +144,12 @@ def _entetes(accept: str, ajax: bool) -> dict[str, str]:
     return entetes
 
 
-def telecharger(url: str, accept: str = "*/*", ajax: bool = False) -> Reponse:
+def telecharger(url: str, accept: str = "*/*", ajax: bool = False, pause: bool = True) -> Reponse:
     """Télécharge `url`. Réessaie une fois sur erreur réseau ou 5xx.
 
     Lève ErreurVerification avec un message lisible en cas d'échec, et met
-    l'hôte en pause s'il signale une limite de débit ou un blocage.
+    l'hôte en pause s'il signale une limite de débit ou un blocage (sauf
+    `pause=False` : limite propre à une API, le reste du site reste joignable).
     """
     hote = urlsplit(url).hostname or ""
     restant = PAUSES.restant(hote)
@@ -174,7 +175,7 @@ def telecharger(url: str, accept: str = "*/*", ajax: bool = False) -> Reponse:
                 derniere = err
                 time.sleep(1.5 * tentative)
                 continue
-            if err.code in CODES_PAUSE:
+            if err.code in CODES_PAUSE and pause:
                 duree = PAUSES.echec(hote)
                 raise ErreurHTTP(err.code, f"{err.reason} — pause {duree / 60:.0f} min") from err
             raise ErreurHTTP(err.code, str(err.reason)) from err
@@ -189,8 +190,8 @@ def telecharger(url: str, accept: str = "*/*", ajax: bool = False) -> Reponse:
     raise ErreurVerification(f"réseau : {raison} — pause {duree / 60:.0f} min")
 
 
-def telecharger_json(url: str, ajax: bool = False) -> Any:
-    reponse = telecharger(url, accept=ACCEPT_JSON, ajax=ajax)
+def telecharger_json(url: str, ajax: bool = False, pause: bool = True) -> Any:
+    reponse = telecharger(url, accept=ACCEPT_JSON, ajax=ajax, pause=pause)
     try:
         return reponse.json()
     except ErreurVerification:

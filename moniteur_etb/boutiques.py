@@ -26,10 +26,11 @@ from typing import Any, Callable
 from urllib.parse import quote, urlsplit, urlunsplit
 
 from .collection import Classement, Collection, langue, langue_acceptee
-from .http import ACCEPT_HTML, ErreurVerification, en_pause, telecharger, telecharger_json
+from .http import ACCEPT_HTML, ErreurHTTP, ErreurVerification, en_pause, telecharger, telecharger_json
 from .modeles import Fiche, Offre, cle_url
 from .pages import (
     Produit,
+    verifier_texte,
     api_woocommerce,
     lire_produit_prestashop,
     lire_produit_woocommerce,
@@ -42,7 +43,7 @@ PLATEFORMES = {"shopify", "woocommerce", "prestashop", "auto"}
 MAX_FICHES_PAGE = 20  # PrestaShop sans recherche JSON : fiches lues une à une, au plus
 # Délai entre deux recherches d'une même boutique pendant la découverte :
 # la recherche Shopify (search/suggest.json) répond 429 au-delà de ~5 requêtes en rafale.
-ESPACEMENT_S = {"shopify": 1.5, "woocommerce": 0.5, "prestashop": 0.5}
+ESPACEMENT_S = {"shopify": 2.5, "woocommerce": 0.5, "prestashop": 0.5}
 _attendre = time.sleep  # remplacé dans les tests
 RECHERCHES_AVEC_CATEGORIE = 3  # Shopify : la catégorie couvre l'essentiel, peu de recherches en plus
 # Catégories Shopify à ignorer même si elles parlent de 30 ans (pas des produits scellés).
@@ -231,9 +232,11 @@ def _shopify_source(b: Boutique, source: str, filtre: FiltreVariante) -> list[Fi
         if not isinstance(produits, list):
             raise ErreurVerification(f"catégorie Shopify « {valeur} » illisible")
         return [f for p in produits if isinstance(p, dict) and (f := fiche_shopify(p, b.racine, filtre, True))]
+    # Limite propre à la recherche : un 429 ici ne doit pas mettre toute la boutique en pause.
     donnees = telecharger_json(
         f"{b.racine}/search/suggest.json?q={quote(valeur)}&resources[type]=product"
-        "&resources[limit]=10&resources[options][unavailable_products]=show"
+        "&resources[limit]=10&resources[options][unavailable_products]=show",
+        pause=False,
     )
     try:
         produits = donnees["resources"]["results"]["products"]
@@ -333,7 +336,7 @@ def _presta_html(b: Boutique, url: str) -> list[Fiche]:
         lien = url_absolue(html.unescape(href.group(1)), b.racine)
         if not lien or urlsplit(lien).hostname != hote or not _RE_URL_FICHE_PRESTA.search(lien):
             continue
-        lien = lien.split("#")[0]
+        lien = lien.split("#")[0].split("?")[0]
         texte = html.unescape(re.sub(r"<[^>]+>", " ", contenu))
         title = _RE_TITLE.search(attributs)
         texte = " ".join((texte if texte.strip() else html.unescape(title.group(1)) if title else "").split())
@@ -346,7 +349,13 @@ def _presta_html(b: Boutique, url: str) -> list[Fiche]:
 
 
 def _presta_fiche_page(url: str, titre: str) -> Fiche:
-    r = verifier_prestashop(Produit(nom=titre or url, url=url, type="prestashop"))
+    produit = Produit(nom=titre or url, url=url, type="prestashop")
+    try:
+        r = verifier_prestashop(produit)
+    except ErreurVerification:
+        if en_pause(url):
+            raise
+        r = verifier_texte(produit)  # thème sans données produit : schema.org, mots de rupture…
     return Fiche(
         cle=cle_url(url), url=url, titre=r.titre or titre, dispo=bool(r.dispo), prix=r.prix,
         image=r.image, quantite=r.quantite, detail=r.detail, ref=url,
@@ -468,6 +477,12 @@ def analyser(b: Boutique, collection: Collection, langues: frozenset[str], decou
                     trouvees.setdefault(source, set()).add(f.cle)
             except ErreurVerification as err:
                 en_echec.add(source)
+                if isinstance(err, ErreurHTTP) and err.code == 429 and source.startswith("recherche:"):
+                    # La boutique limite ses recherches : on garde les fiches déjà connues
+                    # et on reprendra à la prochaine découverte, sans bloquer la boutique.
+                    en_echec.update(sources[i + 1:])
+                    b.note = f"recherche limitée par la boutique (429) : {len(sources) - i} recherche(s) reportée(s)"
+                    break
                 analyse.erreurs.append(f"{source.partition(':')[2]} : {err}")
                 if en_pause(b.url) and sources[i + 1:]:
                     en_echec.update(sources[i + 1:])
