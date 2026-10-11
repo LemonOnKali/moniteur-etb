@@ -66,7 +66,7 @@ jobs:
         if: inputs.essai_minutes != ''
         env:
           FICHIER_PRODUITS: ${{ inputs.ou == 'pc' && 'produits-pc.json' || 'produits.json' }}
-          FICHIER_BOUTIQUES: ${{ inputs.ou == 'pc' && '' || 'boutiques.json' }}
+          FICHIER_BOUTIQUES: ${{ inputs.ou == 'pc' && 'aucun' || 'boutiques.json' }}
           FICHIER_ETAT: etat-essai.json
           DUREE_MINUTES: ${{ inputs.essai_minutes }}
           INTERVALLE_SECONDES: ${{ vars.INTERVALLE_SECONDES || '30' }}
@@ -75,5 +75,5 @@ jobs:
         if: inputs.decouvrir == '' && inputs.page_liens == '' && inputs.essai_minutes == ''
         env:
           FICHIER_PRODUITS: ${{ inputs.ou == 'pc' && 'produits-pc.json' || 'produits.json' }}
-          FICHIER_BOUTIQUES: ${{ inputs.ou == 'pc' && '' || 'boutiques.json' }}
+          FICHIER_BOUTIQUES: ${{ inputs.ou == 'pc' && 'aucun' || 'boutiques.json' }}
         run: python moniteur.py --diagnostic

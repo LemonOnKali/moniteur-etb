@@ -43,5 +43,19 @@ class TestPrestashop16(unittest.TestCase):
         self.assertEqual((r.dispo, r.quantite), (True, 4))
 
 
+class TestReglages(unittest.TestCase):
+    def test_aucune_boutique(self):
+        import os
+        from unittest import mock
+
+        from moniteur_etb.reglages import Reglages
+
+        for valeur, attendu in (("aucun", ""), ("", ""), ("Aucun", ""), ("autres.json", "autres.json")):
+            with mock.patch.dict(os.environ, {"FICHIER_BOUTIQUES": valeur}):
+                self.assertEqual(Reglages.depuis_env().fichier_boutiques, attendu)
+        with mock.patch.dict(os.environ, {}, clear=True):  # Windows : variable vide = absente
+            self.assertEqual(Reglages.depuis_env().fichier_boutiques, "boutiques.json")
+
+
 if __name__ == "__main__":
     unittest.main()

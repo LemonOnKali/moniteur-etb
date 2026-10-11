@@ -187,24 +187,42 @@ produit qui correspond l'emporte, les plus précis sont donc en premier.
 
 ## Surveiller les grandes enseignes depuis ton PC
 
-Amazon, Carrefour et Courses U bloquent les serveurs GitHub mais répondent
-depuis une box internet. Le workflow **Moniteur de stock (PC)** exécute le
-moniteur sur ton ordinateur avec `produits-pc.json`, via un *runner
-auto-hébergé* GitHub. Les alertes arrivent sur le même Discord.
+Amazon, Carrefour, Courses U et MediaMarkt bloquent les serveurs GitHub mais
+répondent depuis une box internet. Le workflow **Moniteur de stock (PC)** fait
+tourner le moniteur sur ton ordinateur (liste `produits-pc.json`) grâce à un
+*runner auto-hébergé* GitHub. Les alertes arrivent sur le même Discord, sans
+doublon avec les boutiques suivies depuis GitHub.
+
+**Installation (une seule fois)**
 
 1. Installe Python 3.12 depuis https://www.python.org/downloads/ en cochant
    **Add python.exe to PATH** et, dans *Customize installation*, **Install for
    all users**.
 2. Sur GitHub : *Settings → Actions → Runners → New self-hosted runner*, choisis
-   ton système et copie-colle les commandes affichées dans un terminal. À la
-   question « run as service », réponds `Y` pour qu'il démarre avec le PC.
-3. *Tester les boutiques* → *Run workflow* avec le choix `pc` pour vérifier ce
-   que chaque enseigne répond depuis chez toi.
-4. *Moniteur de stock (PC)* → *Run workflow*.
+   Windows et copie-colle les commandes affichées dans PowerShell (dans un
+   dossier comme `C:\actions-runner`). À la question « run as service »,
+   réponds `Y` : le runner démarrera tout seul avec le PC.
+
+**Le lancer**
+
+1. *Settings → Actions → Runners* : ton PC doit apparaître **Idle** (vert).
+   S'il est **Offline** : touche Windows → « Services » → *GitHub Actions
+   Runner (…moniteur-etb…)* → **Démarrer** (type de démarrage : Automatique).
+   Sans service : double-clic sur `run.cmd` dans le dossier du runner et laisse
+   la fenêtre ouverte.
+2. *Actions → Moniteur de stock (PC) → Run workflow*. Tu reçois le résumé
+   `✅ Moniteur lancé` sur Discord, puis il se relance tout seul toutes les 6 h.
+3. Empêche la mise en veille : *Paramètres → Système → Alimentation → Mise en
+   veille : Jamais* (un PC en veille ne surveille rien).
+
+**Vérifier / ajouter une enseigne** : *Tester les boutiques* avec `ou = pc`
+montre ce que chaque enseigne répond depuis chez toi. Pour ajouter un produit,
+ouvre sa fiche dans ton navigateur, copie l'adresse et colle-la dans
+« Boutiques à tester » (avec `ou = pc`) : le test donne la ligne à copier dans
+`produits-pc.json`.
 
 Fnac, Cdiscount et Smyths exigent un vrai navigateur (Datadome, PerimeterX) et
-restent hors de portée : garde leurs alertes officielles. MediaMarkt est à
-vérifier avec *Tester les boutiques* en mode `pc`.
+restent hors de portée : garde leurs alertes officielles.
 
 Pour retrouver les fiches des enseignes depuis une page « où acheter »
 (comparateur, article) : *Tester les boutiques* avec le champ « page_liens »,

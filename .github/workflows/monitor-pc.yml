@@ -47,7 +47,8 @@ jobs:
           INTERVALLE_SECONDES: ${{ vars.INTERVALLE_SECONDES || '60' }}
           FICHIER_PRODUITS: produits-pc.json
           # Les boutiques sont surveillées depuis GitHub : pas de doublon d'alerte.
-          FICHIER_BOUTIQUES: ""
+          # (« aucun » et non "" : Windows supprime les variables vides.)
+          FICHIER_BOUTIQUES: aucun
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           PYTHONUNBUFFERED: "1"
           PYTHONIOENCODING: utf-8

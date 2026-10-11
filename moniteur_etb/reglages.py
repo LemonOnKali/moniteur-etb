@@ -14,6 +14,16 @@ def _nombre(nom: str, defaut: float) -> float:
         return defaut
 
 
+def _fichier_optionnel(nom: str, defaut: str) -> str:
+    """Nom de fichier, ou "" si la variable vaut « aucun ».
+
+    Windows supprime une variable d'environnement vide : on ne peut pas compter
+    sur FICHIER_BOUTIQUES="" pour dire « pas de boutiques » (runner du PC).
+    """
+    valeur = os.environ.get(nom, defaut).strip()
+    return "" if valeur.lower() in {"", "aucun", "aucune", "none", "-"} else valeur
+
+
 def _booleen(nom: str) -> bool:
     return (os.environ.get(nom) or "").strip().lower() in {"1", "true", "oui", "yes", "on"}
 
@@ -52,8 +62,7 @@ class Reglages:
             alerte_rupture=_booleen("ALERTE_RUPTURE"),
             langues=frozenset(langues or {"fr"}),
             fichier_produits=os.environ.get("FICHIER_PRODUITS", "produits.json"),
-            # Variable vide = aucune boutique (ex. runner du PC qui ne surveille que les enseignes).
-            fichier_boutiques=os.environ.get("FICHIER_BOUTIQUES", "boutiques.json"),
+            fichier_boutiques=_fichier_optionnel("FICHIER_BOUTIQUES", "boutiques.json"),
             fichier_collection=os.environ.get("FICHIER_COLLECTION", "collection.json"),
             fichier_etat=os.environ.get("FICHIER_ETAT", "etat.json"),
             evenement_github=os.environ.get("GITHUB_EVENT_NAME", ""),
