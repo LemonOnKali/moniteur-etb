@@ -406,6 +406,7 @@ class Analyse:
     requetes: int = 0
     decouverte: bool = False
     erreurs: list[str] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)  # remarques sans gravité (affichées par --diagnostic)
 
 
 def analyser(b: Boutique, collection: Collection, langues: frozenset[str], decouvrir: bool) -> Analyse:
@@ -481,7 +482,7 @@ def analyser(b: Boutique, collection: Collection, langues: frozenset[str], decou
                     # La boutique limite ses recherches : on garde les fiches déjà connues
                     # et on reprendra à la prochaine découverte, sans bloquer la boutique.
                     en_echec.update(sources[i + 1:])
-                    b.note = f"recherche limitée par la boutique (429) : {len(sources) - i} recherche(s) reportée(s)"
+                    analyse.notes.append(f"recherche limitée par la boutique (429) : {len(sources) - i} recherche(s) reportée(s)")
                     break
                 analyse.erreurs.append(f"{source.partition(':')[2]} : {err}")
                 if en_pause(b.url) and sources[i + 1:]:
@@ -537,10 +538,10 @@ def analyser(b: Boutique, collection: Collection, langues: frozenset[str], decou
         b.refs[f.cle] = f.ref
         analyse.offres.append(_offre(b, f, classement))
 
-    if decouvrir and (trouvees or not en_echec):
+    if decouvrir:
         nouvelles = {s: cles & gardees for s, cles in trouvees.items() if cles & gardees}
         # Une recherche en échec garde ses fiches de la fois précédente : pas de trou
-        # de surveillance sur une erreur passagère.
+        # de surveillance sur une erreur passagère. Prochain essai à la prochaine découverte.
         for s in en_echec & b.sources.keys():
             nouvelles[s] = b.sources[s]
         b.sources = nouvelles

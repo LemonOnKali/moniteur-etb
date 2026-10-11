@@ -45,6 +45,19 @@ boîtes vides, autres jeux (Magic 30th…) et l'ancienne gamme 25 ans
 - `produits-pc.json` — grandes enseignes qui bloquent les serveurs GitHub
   (Amazon, Carrefour…), surveillées depuis ton PC (voir plus bas).
 
+Boutiques couvertes aujourd'hui (≈ 250 fiches 30 ans suivies) :
+
+| Plateforme | Boutiques |
+|---|---|
+| Shopify (catalogue entier) | LorenZone, PokeMael, Collect Avenue, Poke-Geek, Hikaru Distribution, Outpost Brussels, TradingCards XXX, VCollect, Cartes-Pokemon.com |
+| WooCommerce (catalogue entier) | Ecardstore, PixelHeart, Guizette Family, GoRetroGaming, PokeShop.cards |
+| PrestaShop (catalogue entier) | Pokezenith, Foxchip, BCD Jeux, Pokesumo, 1001hobbies, Fantastik, Le Monde Imaginaire, Pokémon Carte, Espace Kids |
+| Fiches (`produits.json`) | UltraJeux, Au Dé Mon du Jeu, JouéClub, Micromania, Dstrib, Ludocortex, Plaza TCG, Les Gentlemen du Jeu, Blazing Tail |
+| Depuis le PC (`produits-pc.json`) | Amazon, Carrefour, Courses U, MediaMarkt |
+
+Hors de portée sans vrai navigateur : Fnac, Cdiscount, Smyths (anti-robot),
+Play-in (stock chargé en JavaScript), Pokémon Center.
+
 ## Comment ça marche
 
 - GitHub Actions lance le moniteur toutes les 15 min ; chaque exécution
@@ -179,7 +192,8 @@ auto-hébergé* GitHub. Les alertes arrivent sur le même Discord.
 4. *Moniteur de stock (PC)* → *Run workflow*.
 
 Fnac, Cdiscount et Smyths exigent un vrai navigateur (Datadome, PerimeterX) et
-restent hors de portée : garde leurs alertes officielles.
+restent hors de portée : garde leurs alertes officielles. MediaMarkt est à
+vérifier avec *Tester les boutiques* en mode `pc`.
 
 Pour retrouver les fiches des enseignes depuis une page « où acheter »
 (comparateur, article) : *Tester les boutiques* avec le champ « page_liens »,

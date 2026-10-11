@@ -190,7 +190,7 @@ class TestAnalyse(unittest.TestCase):
         with web.actif():
             a = analyser(b, COLLECTION, FR, decouvrir=True)
         self.assertEqual(a.erreurs, [])
-        self.assertIn("429", b.note)
+        self.assertIn("429", a.notes[0])
         self.assertEqual([o.item.id for o in a.offres], ["etb"])
         self.assertFalse(en_pause("https://shop.fr"))
         self.assertEqual(b.sources, {"recherche:anniversaire": {"shop.fr/products/etb"}})
