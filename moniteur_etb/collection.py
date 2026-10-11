@@ -5,6 +5,8 @@ ramené à des mots simples (« coffret dresseur d elite pokemon 30e anniversair
 puis comparé aux règles :
 
 - `marqueurs` : le titre appartient à la gamme (30e anniversaire, 30 ans, ME05.5…) ;
+- `requis` : le titre parle bien de Pokémon (une boutique généraliste vend aussi
+  des figurines « Shrek 30th ») ;
 - `exclusions` : autres jeux, cartes à l'unité, accessoires… → ignoré ;
 - `items` : le premier item dont un des motifs correspond donne la catégorie
   (ETB, UPC, Bundle…), son nom affiché, son prix plafond anti-spéculateurs et
@@ -73,6 +75,7 @@ class Collection:
     nom: str = "Pokémon 30e Anniversaire"
     recherches: list[str] = field(default_factory=lambda: ["30e anniversaire", "30 ans"])
     marqueurs: list[re.Pattern[str]] = field(default_factory=list)
+    requis: list[list[re.Pattern[str]]] = field(default_factory=list)
     exclusions: list[list[re.Pattern[str]]] = field(default_factory=list)
     items: list[Item] = field(default_factory=list)
     item_defaut: Item = field(default_factory=lambda: Item(id="autre", nom="Produit 30 ans", emoji="✨"))
@@ -97,6 +100,7 @@ class Collection:
             nom=str(brut.get("nom") or cls.nom),
             recherches=[str(r) for r in brut.get("recherches") or ["30e anniversaire", "30 ans"]],
             marqueurs=[re.compile(str(m)) for m in brut.get("marqueurs") or []],
+            requis=[_compiler_motif(m) for m in brut.get("requis") or []],
             exclusions=[_compiler_motif(m) for m in brut.get("exclusions") or []],
             items=items,
             item_defaut=Item(
@@ -124,11 +128,14 @@ class Collection:
         """Classe un titre de fiche, ou None s'il ne s'agit pas d'un produit scellé de la gamme.
 
         `exiger_marqueur=False` pour une fiche venant d'une catégorie « 30 ans »
-        de la boutique : le titre n'a alors pas besoin de répéter « 30 ans ».
+        de la boutique : le titre n'a alors besoin de répéter ni « 30 ans » ni « Pokémon ».
         """
         texte = mots(titre)
-        if exiger_marqueur and not any(m.search(texte) for m in self.marqueurs):
-            return None
+        if exiger_marqueur:
+            if not any(m.search(texte) for m in self.marqueurs):
+                return None
+            if self.requis and not _correspond(self.requis, texte):
+                return None
         if _correspond(self.exclusions, texte) or _RE_NUMERO_CARTE.search(titre):
             return None
         item = next((i for i in self.items if i.correspond(texte)), None)

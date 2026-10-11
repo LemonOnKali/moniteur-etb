@@ -40,6 +40,13 @@ from .texte import lire_prix, mots
 
 PLATEFORMES = {"shopify", "woocommerce", "prestashop", "auto"}
 MAX_FICHES_PAGE = 20  # PrestaShop sans recherche JSON : fiches lues une à une, au plus
+# Délai entre deux recherches d'une même boutique pendant la découverte :
+# la recherche Shopify (search/suggest.json) répond 429 au-delà de ~5 requêtes en rafale.
+ESPACEMENT_S = {"shopify": 1.5, "woocommerce": 0.5, "prestashop": 0.5}
+_attendre = time.sleep  # remplacé dans les tests
+RECHERCHES_AVEC_CATEGORIE = 3  # Shopify : la catégorie couvre l'essentiel, peu de recherches en plus
+# Catégories Shopify à ignorer même si elles parlent de 30 ans (pas des produits scellés).
+_RE_CATEGORIE_HORS_SUJET = re.compile(r"\b(l?unites?|singles?|gradees?|graded|psa|cartes rares|slab)\b")
 
 
 @dataclass
@@ -59,6 +66,7 @@ class Boutique:
     categories_trouvees: list[str] = field(default_factory=list)
     api: str | None = None  # gabarit d'URL d'API qui a fonctionné ({p} = paramètres, {q} = terme)
     presta_html: bool = False  # PrestaShop sans recherche JSON : fiches lues une à une
+    note: str = ""  # remarque de détection affichée par --diagnostic
     derniere_decouverte: float | None = None
     derniere_erreur: str = ""
 
@@ -190,8 +198,12 @@ def fiche_prestashop(produit: dict[str, Any], racine: str) -> Fiche | None:
 # --------------------------------------------------------------------------- #
 
 
-def _shopify_categories(b: Boutique, collection: Collection) -> list[str]:
-    """Catégories (collections) Shopify dont le titre ou le handle évoque la gamme."""
+def _shopify_categories(b: Boutique, collection: Collection, langues: frozenset[str]) -> list[str]:
+    """Catégories (collections) Shopify dont le titre ou le handle évoque la gamme.
+
+    Sont écartées celles de cartes à l'unité, de cartes gradées ou d'une langue
+    refusée (« 30-ans-pokemon-japonais »).
+    """
     trouvees: list[str] = []
     for page in range(1, 5):
         donnees = telecharger_json(f"{b.racine}/collections.json?limit=250&page={page}")
@@ -200,8 +212,12 @@ def _shopify_categories(b: Boutique, collection: Collection) -> list[str]:
             raise ErreurVerification("collections.json illisible")
         for c in cols:
             handle = str(c.get("handle") or "")
-            if handle and (collection.fait_partie(str(c.get("title") or "")) or collection.fait_partie(handle)):
-                trouvees.append(handle)
+            texte = mots(f"{handle} {c.get('title') or ''}")
+            if not handle or not collection.fait_partie(texte):
+                continue
+            if _RE_CATEGORIE_HORS_SUJET.search(texte) or not langue_acceptee(langue(texte), langues):
+                continue
+            trouvees.append(handle)
         if len(cols) < 250:
             break
     return trouvees
@@ -253,9 +269,10 @@ def _woo_requete(b: Boutique, parametres: str) -> list[Fiche]:
 # PrestaShop
 # --------------------------------------------------------------------------- #
 
-_RE_PRESTA_TITRE = re.compile(
-    r'class="[^"]*product-title[^"]*"[^>]*>\s*<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', re.IGNORECASE | re.DOTALL
-)
+_RE_LIEN = re.compile(r"<a\b([^>]*)>(.*?)</a>", re.IGNORECASE | re.DOTALL)
+_RE_HREF = re.compile(r'href\s*=\s*["\']([^"\']+)["\']', re.IGNORECASE)
+_RE_TITLE = re.compile(r'title\s*=\s*["\']([^"\']+)["\']', re.IGNORECASE)
+_RE_URL_FICHE_PRESTA = re.compile(r"/\d+-[^/?#]+\.html(?:[?#]|$)")  # …/12617-nom-du-produit.html
 
 
 def _presta_gabarits(b: Boutique) -> list[str]:
@@ -276,12 +293,12 @@ def _presta_recherche(b: Boutique, terme: str) -> list[Fiche]:
         except ErreurVerification as err:
             if en_pause(gabarit):
                 raise
-            erreurs.append(str(err))
+            erreurs.append(f"{gabarit.split('?')[0]} : {err}")
             continue
         if isinstance(donnees, dict) and isinstance(donnees.get("products"), list):
             b.api = gabarit
             return [f for p in donnees["products"] if isinstance(p, dict) and (f := fiche_prestashop(p, b.racine))]
-        erreurs.append("pas de liste « products »")
+        erreurs.append(f"{gabarit.split('?')[0]} : pas de liste « products »")
     for gabarit in gabarits:
         try:
             fiches = _presta_html(b, gabarit.replace("{q}", q))
@@ -291,22 +308,41 @@ def _presta_recherche(b: Boutique, terme: str) -> list[Fiche]:
             erreurs.append(str(err))
             continue
         b.api, b.presta_html = gabarit, True
+        b.note = "recherche JSON indisponible (" + " | ".join(dict.fromkeys(erreurs)) + ")"
         return fiches
     raise ErreurVerification("recherche PrestaShop : " + " | ".join(dict.fromkeys(erreurs)))
 
 
 def _presta_html(b: Boutique, url: str) -> list[Fiche]:
-    """Page de résultats HTML : titres et liens seulement, disponibilité lue ensuite sur chaque fiche."""
+    """Page de résultats HTML : liens des fiches seulement, disponibilité lue ensuite sur chaque fiche.
+
+    Tout lien du site vers une adresse de fiche PrestaShop (« /123-nom.html ») est
+    retenu, avec son texte le plus long (lien image + lien titre) : marche avec
+    tous les thèmes. Les liens du menu ou des meilleures ventes sont écartés
+    ensuite par le classement.
+    """
     page = telecharger(url, accept=ACCEPT_HTML).texte()
     if "prestashop" not in page.lower():
         raise ErreurVerification("page de recherche non PrestaShop")
-    fiches = []
-    for lien, titre in _RE_PRESTA_TITRE.findall(page):
-        lien = url_absolue(html.unescape(lien), b.racine)
-        if lien:
-            titre = html.unescape(re.sub(r"<[^>]+>", "", titre)).strip()
-            fiches.append(Fiche(cle=cle_url(lien), url=lien, titre=titre, dispo=False, ref=lien, detail="à vérifier"))
-    return fiches
+    hote = urlsplit(b.racine).hostname
+    titres: dict[str, str] = {}
+    for attributs, contenu in _RE_LIEN.findall(page):
+        href = _RE_HREF.search(attributs)
+        if not href:
+            continue
+        lien = url_absolue(html.unescape(href.group(1)), b.racine)
+        if not lien or urlsplit(lien).hostname != hote or not _RE_URL_FICHE_PRESTA.search(lien):
+            continue
+        lien = lien.split("#")[0]
+        texte = html.unescape(re.sub(r"<[^>]+>", " ", contenu))
+        title = _RE_TITLE.search(attributs)
+        texte = " ".join((texte if texte.strip() else html.unescape(title.group(1)) if title else "").split())
+        if len(texte) > len(titres.get(lien, "")):
+            titres[lien] = texte
+    return [
+        Fiche(cle=cle_url(lien), url=lien, titre=titre, dispo=False, ref=lien, detail="à vérifier")
+        for lien, titre in titres.items()
+    ]
 
 
 def _presta_fiche_page(url: str, titre: str) -> Fiche:
@@ -409,18 +445,22 @@ def analyser(b: Boutique, collection: Collection, langues: frozenset[str], decou
                 if not handles:
                     analyse.requetes += 1
                     try:
-                        handles = _shopify_categories(b, collection)
+                        handles = _shopify_categories(b, collection, langues)
                     except ErreurVerification as err:
                         analyse.erreurs.append(f"catégories : {err}")
                         handles = b.categories_trouvees
                 b.categories_trouvees = handles
                 sources += [f"categorie:{h}" for h in handles]
             termes = b.recherches if b.recherches is not None else collection.recherches
+            if b.detectee == "shopify" and sources and b.recherches is None:
+                termes = termes[:RECHERCHES_AVEC_CATEGORIE]
             sources += [f"recherche:{t}" for t in termes]
         elif b.detectee in ("shopify", "prestashop") and not b.presta_html:
             sources = couverture(b.sources)
 
         for i, source in enumerate(sources):
+            if decouvrir and i and source.startswith("recherche:"):
+                _attendre(ESPACEMENT_S.get(b.detectee or "", 0.5))
             analyse.requetes += 1
             try:
                 for f in lire(source):

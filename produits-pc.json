@@ -8,6 +8,20 @@
     "note": "En stock si le bouton Ajouter au panier de la boîte d'achat est présent (« Disponible sur invitation » = pas en stock). Prix lu dans la page, filtré par PRIX_MAX."
   },
   {
+    "boutique": "MediaMarkt (BE)",
+    "nom": "Bundle 6 boosters 30 ans",
+    "url": "https://www.mediamarkt.be/fr/product/_30th-anniversary-6-bo-bundle-cartes-pokemon-2251005.html",
+    "type": "texte",
+    "note": "MediaMarkt répond 403 aux serveurs GitHub : à tester depuis le PC."
+  },
+  {
+    "boutique": "MediaMarkt (BE)",
+    "nom": "Mini Tin 30 ans",
+    "url": "https://www.mediamarkt.be/fr/product/_pokemon-30th-anniversary-mini-tin-pokemon-cards-pokemon-cards-2251004.html",
+    "type": "texte",
+    "note": "MediaMarkt répond 403 aux serveurs GitHub : à tester depuis le PC."
+  },
+  {
     "boutique": "Cdiscount",
     "nom": "Coffret Dresseur d'Élite 30 ans",
     "url": "https://www.cdiscount.com/juniors/jeux-de-societe-cartes/pokemon-etb-coffret-dresseur-d-elite-30e-anniv/f-12079160406-pok196214144835.html",

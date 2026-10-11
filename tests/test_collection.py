@@ -45,7 +45,56 @@ CAS = [
 ]
 
 
+# Titres relevés dans de vraies boutiques lors des tests sur GitHub Actions.
+CAS_REELS = [
+    ("POKEMON - 30ème Anniversaire - Collection Poster - FR", "poster"),
+    ("POKEMON -30ème Anniversaire -Collection Ultra Premium (1) Mentali - FR", "upc-journee"),
+    ("POKEMON - 30ème Anniversaire - Battle Deck - Noctali / Mentali - FR", "deck-combat"),
+    ("Deck du Dresseur Pokémon 30e Anniversaire Mentali / Noctali (Modèle Aléatoire)", "deck-combat"),
+    ("Tripack Collection Autocollant Pokémon 30e Anniversaire (Modèle Aléatoire)", "autocollants"),
+    ("Coffret Collection Figurine Pokémon 30e Anniversaire : Mewtwo", "figurine"),
+    ("[Précommande] Coffret Collection avec Figurine Mew Pokémon 30e Anniversaire (FR)", "figurine"),
+    ("[Précommande] Mini Tin Mewtwo (Nuit) Pokémon 30e Anniversaire (FR)", "mini-tin"),
+    ("Coffret - Pokémon Day 2026 / 30 ans", "pokemon-day"),
+    ("Coffret Journée Pokémon 2026 : Collection 30 Ans - Pikachu", "pokemon-day"),
+    ("Coffret 30 Ans Journée 2026 Pikachu – FR", "pokemon-day"),
+    ("Coffret Ultra-Premium (UPC) - 30ème Anniversaire", "upc"),
+    ("30TH Anniversaire Pokémon Mentali UPC – Version Française", "upc-journee"),
+    ("Pokémon · 30e Anniversaire - Collection Ultra Mentali Ex - FR", "upc-journee"),
+    ("Pokémon - Coffret Collection Illustration Premiers Partenaires Série 3 - 30 Ans", "premiers-partenaires"),
+    ("Coffret - Collection Avec Pin's Deluxe / Premiers Partenaires - 30 ans", "premiers-partenaires-pins"),
+    ("Coffret 4 Boosters - 30ème Anniversaire", "coffret-ex"),
+    ("Pokémon - Lot de 6 boosters ME05.5 : 30e Anniversaire", "bundle"),
+    ("30e Anniversaire CEL30 - Lot de 2 Boosters", "duopack"),
+    ("Collection Classeur Pokémon 30e Anniversaire – 5 Boosters – Français", "classeur"),
+    ("Coffret Dresseur d'Élite Pokémon 30e Anniversaire – Français + Protection Phoenix Shield", "etb"),
+    ("Pokémon - Collection K.O ME05.5 - 30e Anniversaire - Évoli", "collection-ko"),
+    # Faux positifs vus en vrai
+    ("Figurine Shrek 30Th Anniv - Donkey Pop 10cm", None),
+    ("Tomb Raider POP! Games Vinyl figurine Lara Croft (30th Anniversary) 9 cm", None),
+    ("Pokémon Battle Figure figurine Noctali (30th Anniversary Glitter) 8 cm", None),
+    ("Peluches Pokémon Pastel 30th Anniversary 20 cm (Lot de 6)", None),
+    ("Disney Le Roi Lion 30ème Anniversaire - Boîte de 10 Boosters de 4 Cartes", None),
+    ("Funko Pop ! Casper – Ghostly Trio (30th Anniversary 3-Pack)", None),
+    ('LAMBORGHINI REVUELTO 2024 VIOLET "VIOLA 30TH MATTE" (BLISTER EDITION) (LHD)', None),
+    ("SNK Metal Slug 4-in-1 Coffret Collector 30th Anniversary", None),
+    ("Pokemon 30th Anniversary Metal Charm Alola, Galar, Paldea Collection 4", None),
+    ("Mewtwo ex SAR - 30th Celebration - M6a", None),
+    ("Mew G/RGB – 30e Anniversaire", None),
+    ("Deck Box - 30th Pikachu, Mew & Mewtwo", None),
+    ("Sac - 30th Pikachu, Mew & Mewtwo", None),
+    ("Héros Transcendants - Collection pin’s Deluxe Premiers Partenaires", None),
+    ("V:TES - 30ème Anniversaire VF", None),
+]
+
+
 class TestClassement(unittest.TestCase):
+    def test_cas_reels(self):
+        for titre, attendu in CAS_REELS:
+            with self.subTest(titre=titre):
+                c = COLLECTION.classer(titre)
+                self.assertEqual(c.item.id if c else None, attendu)
+
     def test_cas(self):
         for titre, attendu in CAS:
             with self.subTest(titre=titre):

@@ -28,19 +28,35 @@
     "boutique": "Dstrib",
     "nom": "Coffret Dresseur d'Élite 30 ans",
     "url": "https://www.dstrib.com/produit-8296-etb-coffret-dresseur-d-elite-30e-anniversaire-franneais.html",
-    "type": "texte"
+    "type": "texte",
+    "regex_stock": "name=\"quantite\\[0\\]",
+    "note": "Même moteur qu'UltraJeux : en stock seulement si le choix de quantité (bouton panier) est affiché."
   },
   {
-    "boutique": "MediaMarkt (BE)",
-    "nom": "Bundle 6 boosters 30 ans",
-    "url": "https://www.mediamarkt.be/fr/product/_30th-anniversary-6-bo-bundle-cartes-pokemon-2251005.html",
-    "type": "texte"
+    "boutique": "Ludocortex",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
+    "url": "https://www.ludocortex.fr/pokemon-tcg/18606-pokemon-30-ans-coffret-dresseur-d-elite.html",
+    "type": "prestashop",
+    "note": "La recherche de Ludocortex répond 403 aux serveurs GitHub : fiche lue directement."
   },
   {
-    "boutique": "MediaMarkt (BE)",
-    "nom": "Mini Tin 30 ans",
-    "url": "https://www.mediamarkt.be/fr/product/_pokemon-30th-anniversary-mini-tin-pokemon-cards-pokemon-cards-2251004.html",
-    "type": "texte"
+    "boutique": "Plaza TCG",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
+    "url": "https://plazatcg.com/etb/2184-pokemon-etb-coffret-dresseur-d-elite-30e-anniversaire-francais-196214144835.html",
+    "type": "prestashop",
+    "note": "La recherche de Plaza TCG est trop lente (délai dépassé) : fiche lue directement."
+  },
+  {
+    "boutique": "Blazing Tail",
+    "nom": "Collection Poster 30 ans",
+    "url": "https://www.blazingtail.fr/108990-coffret-poster-pokemon-30eme-anniversaire.html",
+    "type": "auto"
+  },
+  {
+    "boutique": "Blazing Tail",
+    "nom": "Coffret Pokémon Day 2026 30 ans",
+    "url": "https://www.blazingtail.fr/73760-coffret-pokemon-day-30ans.html",
+    "type": "auto"
   },
   {
     "boutique": "Philibert",

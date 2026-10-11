@@ -1,5 +1,6 @@
 import os
 import unittest
+from unittest import mock
 
 from moniteur_etb.boutiques import Boutique, analyser, couverture, fiche_prestashop, fiche_shopify, fiche_woocommerce
 from moniteur_etb.collection import Collection
@@ -70,6 +71,9 @@ class TestFiches(unittest.TestCase):
 class TestAnalyse(unittest.TestCase):
     def setUp(self):
         PAUSES.vider()
+        attente = mock.patch("moniteur_etb.boutiques._attendre")
+        attente.start()
+        self.addCleanup(attente.stop)
 
     def test_shopify_decouverte_puis_verification(self):
         web = FauxWeb({
@@ -132,6 +136,46 @@ class TestAnalyse(unittest.TestCase):
         self.assertTrue(a.offres[0].dispo)
         self.assertEqual(a.offres[0].quantite, 2)
         self.assertIn("ajax=1", web.appels[0])
+
+    def test_prestashop_sans_json_lit_les_fiches(self):
+        recherche = (
+            '<html><script>var prestashop = {};</script>'
+            '<a href="https://p.fr/menu/55-etb-mega.html">ETB Méga-Évolution</a>'
+            '<a href="/pokemon/12617-etb-30.html" class="thumbnail"><img src="x.jpg"></a>'
+            '<h3 class="name"><a href="/pokemon/12617-etb-30.html">Coffret Dresseur d&#039;Élite 30 ans</a></h3>'
+            '<a href="https://autre-site.fr/1-x.html">Pub</a></html>'
+        )
+        fiche = (
+            '<div data-product="{&quot;name&quot;:&quot;Coffret Dresseur d\'Élite 30 ans&quot;,'
+            '&quot;availability&quot;:&quot;available&quot;,&quot;quantity&quot;:3,&quot;price_amount&quot;:69.9}"></div>'
+        )
+        web = FauxWeb({"ajax=1": "pas du json", "controller=search": recherche, "12617-etb-30.html": fiche})
+        b = Boutique(nom="Presta", url="https://p.fr", plateforme="prestashop")
+        with web.actif(), mock.patch("moniteur_etb.pages.telecharger_page", lambda url: web.telecharger(url).texte()):
+            a = analyser(b, COLLECTION, FR, decouvrir=True)
+            self.assertTrue(b.presta_html)
+            self.assertEqual([(o.item.id, o.dispo, o.prix) for o in a.offres], [("etb", True, 69.9)])
+            web.appels.clear()
+            a2 = analyser(b, COLLECTION, FR, decouvrir=False)  # cycle suivant : la fiche seule
+        self.assertEqual(web.appels, ["https://p.fr/pokemon/12617-etb-30.html"])
+        self.assertTrue(a2.offres[0].dispo)
+
+    def test_categories_shopify_filtrees(self):
+        web = FauxWeb({
+            "/collections.json": {"collections": [
+                {"handle": "cartes-a-lunites-30-ans-m6a-jpn", "title": "Cartes à l'unité 30 ans"},
+                {"handle": "30-ans-pokemon-japonais", "title": "30 ans japonais"},
+                {"handle": "pokemon-30-ans", "title": "Pokémon 30 ans"},
+            ]},
+            "/products.json": {"products": []},
+            "/search/suggest.json": {"resources": {"results": {"products": []}}},
+        })
+        b = Boutique(nom="Test", url="https://shop.fr", plateforme="shopify")
+        with web.actif():
+            analyser(b, COLLECTION, FR, decouvrir=True)
+        self.assertEqual(b.categories_trouvees, ["pokemon-30-ans"])
+        recherches = [u for u in web.appels if "suggest" in u]
+        self.assertEqual(len(recherches), 3)  # catégorie trouvée : 3 recherches seulement
 
     def test_detection_automatique(self):
         web = FauxWeb({"/products.json?limit=1": {"products": []}, "/collections.json": {"collections": []},

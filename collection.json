@@ -1,35 +1,40 @@
 {
   "nom": "Pokémon 30e Anniversaire",
-  "note": "Gamme JCC Pokémon 30e Anniversaire (30th Celebration, sortie à partir du 16/09/2026). Les motifs sont comparés au titre de la fiche sans accents ni ponctuation ; « a + b » exige les deux. Le premier item qui correspond l'emporte : les plus précis d'abord. prix_max = plafond anti-spéculateurs en euros ; en dessous de prix_min, ce n'est pas ce produit (protection acrylique, carte seule…).",
+  "note": "Gamme JCC Pokémon 30e Anniversaire (30th Celebration, sorties du 16/09 au 06/11/2026). Une fiche trouvée par recherche doit contenir un marqueur (30 ans…) et un mot « requis » (Pokémon, booster, bundle… : écarte les figurines Shrek 30th des boutiques généralistes). Les motifs sont comparés au titre de la fiche sans accents ni ponctuation ; « a + b » exige les deux. Le premier item qui correspond l'emporte : les plus précis d'abord. prix_max = plafond anti-spéculateurs en euros ; en dessous de prix_min, ce n'est pas ce produit (protection acrylique, carte seule…).",
   "recherches": [
     "anniversaire",
     "30 ans",
     "30th",
-    "dresseur d'élite 30",
     "ultra premium",
-    "bundle 30",
     "mini tin",
     "nymphali",
-    "amphinobi",
-    "poster 30",
-    "métamorph",
-    "classeur 30",
+    "premiers partenaires",
     "deck de combat"
   ],
   "marqueurs": [
     "\\b30 ?(e|eme|ieme|th|em)? ?(anniversaire|anniv|anniversary|ans|celebration)\\b",
     "\\b30th\\b",
     "\\b30a\\b",
+    "\\bcel ?30\\b",
     "\\bme ?0?5 ?5\\b",
-    "\\bpokemon day\\b.*\\b2026\\b"
+    "\\b(pokemon day|journee pokemon)\\b.*\\b2026\\b"
+  ],
+  "requis": [
+    "pokemon", "jcc", "pikachu", "dresseur", "etb", "elite trainer", "pokebox", "upc", "ultra premium",
+    "nymphali", "amphinobi", "mentali", "noctali", "metamorph", "evoli", "mew", "mewtwo",
+    "noadkoko", "lucario", "premiers partenaires", "cel30",
+    "booster", "boosters", "bundle", "mini tin", "duopack", "duo pack", "tripack", "classeur",
+    "k o", "knock out", "poster"
   ],
   "exclusions": [
-    "magic", "mtg", "yu gi oh", "yugioh", "lorcana", "one piece", "dragon ball", "digimon",
-    "flesh and blood", "star wars", "riftbound", "altered", "union arena", "weiss schwarz", "naruto",
-    "carte a l unite", "cartes a l unite", "psa", "pca", "cgc", "bgs", "collect aura", "gradee", "graded", "slab",
+    "magic", "mtg", "yu gi oh", "yugioh", "lorcana", "one piece", "dragon ball", "digimon", "disney", "panini",
+    "flesh and blood", "star wars", "riftbound", "altered", "union arena", "weiss schwarz", "naruto", "v tes",
+    "carte a l unite", "cartes a l unite", "psa", "pca", "cgc", "bgs", "collect aura", "collectaura", "gradee", "graded", "slab", "sar", "m6a",
     "protege cartes", "protege carte", "sleeves", "pochettes", "toploader", "top loader", "playmat",
-    "vitrine", "ultra pro", "dragon shield", "gamegenic",
-    "boite vide", "vide", "empty", "sans booster", "sans boosters",
+    "vitrine", "ultra pro", "dragon shield", "gamegenic", "deck box", "card box", "sac", "sacoche",
+    "funko", "peluche", "peluches", "plush", "battle figure", "charm", "porte cle", "keychain", "badge",
+    "piece de collection", "statuette", "figure metal", "pokeball led",
+    "boite vide", "vide", "empty", "sans booster", "sans boosters", "case de", "carton de",
     "code booster", "codes booster", "code en ligne", "codes en ligne", "lot de codes",
     "occasion", "ouvert", "display",
     "25e anniversaire", "25eme anniversaire", "25 ans", "25th", "celebrations"
@@ -50,7 +55,7 @@
       "emoji": "📦",
       "prix_max": 100,
       "prix_min": 40,
-      "motifs": ["dresseur d'élite", "dresseur d'elite", "dresseur elite", "etb", "elite trainer box", "elite trainer"]
+      "motifs": ["dresseur d'élite", "dresseur elite", "etb", "elite trainer box", "elite trainer"]
     },
     {
       "id": "upc-journee",
@@ -58,7 +63,7 @@
       "emoji": "☀️",
       "prix_max": 300,
       "prix_min": 120,
-      "motifs": ["ultra premium + journée", "ultra premium + jour", "ultra premium + day", "upc + journée", "upc + day", "ultra premium + mentali", "ultra premium + espeon"]
+      "motifs": ["ultra premium + journée", "ultra premium + jour", "ultra premium + day", "upc + journée", "upc + day", "ultra premium + mentali", "ultra + mentali", "upc + mentali", "ultra premium + espeon", "upc + espeon"]
     },
     {
       "id": "upc-soiree",
@@ -66,7 +71,7 @@
       "emoji": "🌙",
       "prix_max": 300,
       "prix_min": 120,
-      "motifs": ["ultra premium + soirée", "ultra premium + nuit", "ultra premium + night", "upc + soirée", "upc + night", "ultra premium + noctali", "ultra premium + umbreon"]
+      "motifs": ["ultra premium + soirée", "ultra premium + nuit", "ultra premium + night", "upc + soirée", "upc + night", "ultra premium + noctali", "ultra + noctali", "upc + noctali", "ultra premium + umbreon", "upc + umbreon"]
     },
     {
       "id": "upc",
@@ -82,7 +87,7 @@
       "emoji": "🟣",
       "prix_max": 80,
       "prix_min": 25,
-      "motifs": ["métamorph", "metamorph", "ditto"]
+      "motifs": ["métamorph", "ditto"]
     },
     {
       "id": "deck-combat",
@@ -90,7 +95,7 @@
       "emoji": "⚔️",
       "prix_max": 30,
       "prix_min": 10,
-      "motifs": ["deck de combat", "decks de combat", "battle deck", "deck + mentali", "deck + noctali", "deck + espeon", "deck + umbreon"]
+      "motifs": ["deck de combat", "decks de combat", "deck combat", "battle deck", "deck + mentali", "deck + noctali", "deck + espeon", "deck + umbreon"]
     },
     {
       "id": "classeur",
@@ -98,7 +103,7 @@
       "emoji": "📒",
       "prix_max": 60,
       "prix_min": 20,
-      "motifs": ["classeur", "binder"]
+      "motifs": ["collection + classeur", "coffret + classeur", "classeur + boosters", "binder collection", "collection + binder"]
     },
     {
       "id": "mini-tin",
@@ -112,7 +117,7 @@
       "id": "bundle",
       "nom": "Bundle 6 boosters",
       "emoji": "🎁",
-      "prix_max": 60,
+      "prix_max": 70,
       "prix_min": 25,
       "motifs": ["bundle", "lot de boosters", "lot de 6 boosters", "6 boosters", "booster bundle", "pack de 6"]
     },
@@ -130,7 +135,7 @@
       "emoji": "🎀",
       "prix_max": 45,
       "prix_min": 15,
-      "motifs": ["nymphali", "amphinobi", "sylveon", "greninja", "ex box"]
+      "motifs": ["nymphali", "amphinobi", "sylveon", "greninja", "ex box", "coffret + 4 boosters"]
     },
     {
       "id": "poster",
@@ -146,7 +151,7 @@
       "emoji": "🏷️",
       "prix_max": 32,
       "prix_min": 10,
-      "motifs": ["autocollant", "autocollants", "sticker", "stickers", "noadkoko", "exeggutor", "lucario"]
+      "motifs": ["autocollant", "autocollants", "autocolant", "sticker", "stickers", "noadkoko", "exeggutor", "lucario"]
     },
     {
       "id": "figurine",
@@ -154,15 +159,31 @@
       "emoji": "🧸",
       "prix_max": 65,
       "prix_min": 15,
-      "motifs": ["figurine", "figurines", "figure", "mewtwo", "mew"]
+      "motifs": ["collection + figurine", "coffret + figurine", "figure collection", "figurine + mew", "figurine + mewtwo", "collection + mewtwo", "collection + mew", "coffret + mewtwo", "coffret + mew"]
+    },
+    {
+      "id": "premiers-partenaires-pins",
+      "nom": "Collection Pin's Deluxe Premiers Partenaires",
+      "emoji": "📌",
+      "prix_max": 60,
+      "prix_min": 15,
+      "motifs": ["pin + premiers partenaires", "pins + premiers partenaires", "pin + first partner", "deluxe pin"]
+    },
+    {
+      "id": "premiers-partenaires",
+      "nom": "Collection Illustration Premiers Partenaires",
+      "emoji": "🌱",
+      "prix_max": 60,
+      "prix_min": 15,
+      "motifs": ["premiers partenaires", "first partner", "first partners"]
     },
     {
       "id": "pokemon-day",
-      "nom": "Coffret Pokémon Day 2026",
+      "nom": "Coffret Journée Pokémon (Pokémon Day 2026)",
       "emoji": "🎂",
       "prix_max": 45,
       "prix_min": 15,
-      "motifs": ["pokemon day"]
+      "motifs": ["pokemon day", "journee pokemon", "journee + 2026", "coffret journee"]
     },
     {
       "id": "collection-ko",
