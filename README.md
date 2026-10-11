@@ -1,21 +1,104 @@
-# moniteur-etb
+# moniteur-etb — toute la gamme Pokémon 30 ans
 
 Moniteur de stock **gratuit** qui tourne sur GitHub Actions et envoie une alerte
-Discord dès qu'un produit passe en stock. Aucune dépendance : Python 3.12 et sa
+Discord dès qu'un produit de la gamme **JCC Pokémon 30e Anniversaire** passe en
+stock, dans des dizaines de boutiques. Aucune dépendance : Python 3.12 et sa
 bibliothèque standard, c'est tout.
+
+## Ce qui est surveillé
+
+**Toute la gamme** (fichier `collection.json`), chaque produit avec son plafond
+anti-spéculateurs :
+
+| Produit | Plafond |
+|---|---|
+| 🏆 Coffret Dresseur d'Élite Pokémon Center | 130 € |
+| 📦 Coffret Dresseur d'Élite (ETB) | 100 € |
+| ☀️ Collection Ultra-Premium Journée (Mentali) | 300 € |
+| 🌙 Collection Ultra-Premium Soirée (Noctali) | 300 € |
+| 💎 Collection Ultra-Premium | 300 € |
+| 🟣 Collection Premium Métamorph | 80 € |
+| ⚔️ Deck de Combat Mentali-ex / Noctali-ex | 30 € |
+| 📒 Collection Classeur | 60 € |
+| 🥫 Mini Tin Jour / Nuit | 25 € |
+| 🎁 Bundle 6 boosters | 70 € |
+| 🥫 Pokébox Nymphali / Amphinobi | 45 € |
+| 🎀 Coffret Nymphali-ex / Amphinobi-ex | 45 € |
+| 🖼️ Collection Poster | 40 € |
+| 🏷️ Collection Autocollants (Noadkoko / Lucario) | 32 € |
+| 🧸 Collection Figurine Mew / Mewtwo | 65 € |
+| 📌 Collection Pin's Deluxe Premiers Partenaires | 60 € |
+| 🌱 Collection Illustration Premiers Partenaires | 60 € |
+| 🎂 Coffret Journée Pokémon (Pokémon Day 2026) | 45 € |
+| 🥊 Collection K.O. | 22 € |
+| 🃏 Tripack (3 boosters) | 28 € |
+| 🃏 Duopack Évoli (2 boosters) | 20 € |
+| 🎴 Booster à l'unité | 9 € |
+
+Les cartes à l'unité, cartes gradées, accessoires (protections, sleeves…),
+boîtes vides, autres jeux (Magic 30th…) et l'ancienne gamme 25 ans
+(Célébrations) sont ignorés. Un prix plancher écarte aussi les faux positifs
+(une « protection acrylique ETB » à 15 € n'est pas un ETB).
+
+**Dans toutes ces boutiques** :
+
+- `boutiques.json` — boutiques **surveillées en entier** : Shopify, WooCommerce
+  et PrestaShop. Le moniteur trouve tout seul leurs fiches 30 ans (catégorie
+  « 30 ans » de la boutique + recherche), **y compris celles mises en ligne
+  après son lancement**.
+- `produits.json` — fiches surveillées une par une : enseignes sans catalogue
+  exploitable (UltraJeux, JouéClub, Micromania…).
+- `produits-pc.json` — grandes enseignes qui bloquent les serveurs GitHub
+  (Amazon, Carrefour…), surveillées depuis ton PC (voir plus bas).
+
+Boutiques couvertes aujourd'hui (≈ 250 fiches 30 ans suivies) :
+
+| Plateforme | Boutiques |
+|---|---|
+| Shopify (catalogue entier) | LorenZone, PokeMael, Collect Avenue, Poke-Geek, Hikaru Distribution, Outpost Brussels, TradingCards XXX, VCollect, Cartes-Pokemon.com |
+| WooCommerce (catalogue entier) | Ecardstore, PixelHeart, Guizette Family, GoRetroGaming, PokeShop.cards |
+| PrestaShop (catalogue entier) | Pokezenith, Foxchip, BCD Jeux, Pokesumo, 1001hobbies, Fantastik, Le Monde Imaginaire, Pokémon Carte, Espace Kids |
+| Fiches (`produits.json`) | UltraJeux, Au Dé Mon du Jeu, JouéClub, Micromania, Dstrib, Ludocortex, Plaza TCG, Les Gentlemen du Jeu, Blazing Tail |
+| Depuis le PC (`produits-pc.json`) | Amazon, Carrefour, Courses U, MediaMarkt |
+
+Hors de portée sans vrai navigateur : Fnac, Cdiscount, Smyths (anti-robot),
+Play-in (stock chargé en JavaScript), Pokémon Center.
 
 ## Comment ça marche
 
-- GitHub Actions lance `moniteur.py` toutes les 15 min (et à la demande). Chaque
-  exécution surveille pendant ~6 h et la suivante prend le relais : couverture
-  continue même quand GitHub retarde ses crons.
-- Une vérification **toutes les 60 s**, tous les produits **en parallèle**.
-- Une alerte `🚨 EN STOCK : nom à prix €` + lien part sur Discord **uniquement au
-  passage en stock**. L'état est conservé entre les exécutions (cache Actions),
-  donc pas de doublon, et jamais deux alertes à moins de 10 min pour un même produit.
-- Les produits en stock **au-dessus de `PRIX_MAX`** (100 € par défaut) sont
-  ignorés : pas d'alerte pour les revendeurs spéculateurs.
-- Un lancement manuel envoie `✅ Moniteur lancé` pour vérifier que tout fonctionne.
+- GitHub Actions lance le moniteur toutes les 15 min ; chaque exécution
+  surveille ~6 h et la suivante prend le relais : couverture continue.
+- **Vérification toutes les 30 s**, toutes les boutiques **en parallèle**. Une
+  boutique entière ne coûte que 1 à 3 requêtes par cycle (catégorie Shopify,
+  liste d'ids WooCommerce, recherche PrestaShop).
+- **Recherche de nouvelles fiches toutes les 15 min** dans chaque boutique,
+  étalée sur plusieurs cycles (3 boutiques au plus par cycle).
+- Shopify limite le débit par adresse IP sur l'ensemble de ses boutiques : les
+  requêtes Shopify passent par une file commune (1,5 s d'écart, ralentie
+  automatiquement si Shopify répond 429).
+- **Alerte uniquement au passage en stock** (ou quand le prix repasse sous le
+  plafond). L'état est conservé entre les exécutions : pas de doublon, et
+  jamais deux alertes à moins de 10 min pour une même fiche.
+- Un site qui bloque (403/429) ou ne répond pas est mis **en pause** (2 min,
+  puis 4, 8… 30 min au plus) au lieu d'être martelé.
+- Filtre de langue : cartes **françaises** par défaut (variable `LANGUES`).
+
+### Sur Discord
+
+Chaque alerte est une carte avec l'image du produit, le prix, la boutique, la
+langue, le stock restant quand la boutique le donne, et le lien direct :
+
+```
+@everyone 🚨 Bundle 6 boosters en stock chez LorenZone à 39,90 €
+┃ 🎁 Bundle 6 boosters
+┃ Pokémon Bundle 6 Boosters 30e Anniversaire FR
+┃ 🆕 Nouvelle fiche
+┃ 💶 39,90 €   🏪 LorenZone   🌐 🇫🇷 FR   📊 3 restant(s)
+```
+
+Plusieurs alertes dans le même cycle partent dans un seul message (10 cartes
+max). Un lancement manuel envoie un **résumé** : nombre de boutiques par
+produit, fiches suivies, sources en erreur.
 
 ## Installation (2 minutes)
 
@@ -24,33 +107,90 @@ bibliothèque standard, c'est tout.
 2. Sur GitHub : *Settings → Secrets and variables → Actions → New repository secret*,
    nom `DISCORD_WEBHOOK`, valeur = l'URL du webhook. **Ne mets jamais l'URL dans
    le code.**
-3. (Optionnel) Onglet *Variables* → `DISCORD_MENTION` = `@everyone` ou
-   `<@&ID_DU_ROLE>` pour être pingé, `PRIX_MAX` pour changer le prix plafond.
+3. (Optionnel) Onglet *Variables* :
+   - `DISCORD_MENTION` = `@everyone` ou `<@&ID_DU_ROLE>` pour être pingé ;
+   - `LANGUES` = `fr,en` pour accepter aussi les cartes anglaises ;
+   - `INTERVALLE_SECONDES` (30), `DECOUVERTE_MINUTES` (15) ;
+   - `PRIX_MAX` : plafond des produits qui n'en ont pas dans `collection.json`.
 4. Onglet *Actions* → *Moniteur de stock* → *Run workflow*. Tu dois recevoir
-   `✅ Moniteur lancé` sur Discord.
+   le résumé `✅ Moniteur lancé` sur Discord.
 
 > Le dépôt doit rester **public** pour que les minutes Actions soient illimitées
 > (un dépôt privé n'a que 2 000 min/mois, épuisées en une journée).
 
-## Boutiques surveillées
+## Ajouter une boutique
 
-Voir `produits.json`. Actuellement, le Coffret Dresseur d'Élite 30e Anniversaire chez :
-LorenZone, PokeMael, Collect Avenue, Poke-Geek, Hikaru Distribution, Outpost Brussels (Shopify) ·
-Ecardstore, PixelHeart, Guizette Family (WooCommerce) · Foxchip, Les Gentlemen du Jeu, BCD Jeux,
-Pokesumo, Ludocortex, Pokezenith, Plaza TCG, Fantastik, 1001hobbies (PrestaShop) ·
-UltraJeux, Au Dé Mon du Jeu, Smartoys, Philibert, JouéClub, La Grande Récré (page HTML).
+**Shopify, WooCommerce ou PrestaShop** (la grande majorité des boutiques TCG) :
+onglet *Actions* → *Tester les boutiques* → *Run workflow*, et colle les
+adresses dans « Boutiques à tester » (séparées par des espaces) :
 
-Amazon, Carrefour et Courses U bloquent les serveurs GitHub mais répondent
-depuis une box internet. Fnac, Cdiscount et Smyths exigent un vrai navigateur
-et restent hors de portée (entrées désactivées). Elles sont
-dans `produits-pc.json`, surveillé par le workflow **Moniteur de stock (PC)** qui
-tourne sur ton propre ordinateur (voir ci-dessous).
+```
+https://boutique-une.fr https://boutique-deux.com
+```
+
+Le test détecte la plateforme, liste les fiches 30 ans trouvées et affiche les
+lignes à copier dans `boutiques.json`. Une adresse de **fiche produit** (Amazon,
+Micromania, JouéClub…) est testée comme une fiche et donne la ligne à copier
+dans `produits.json`.
+
+```json
+{"nom": "LorenZone", "url": "https://lorenzone.fr", "plateforme": "shopify"}
+```
+
+| Champ | Description |
+|---|---|
+| `nom`, `url` | Nom affiché et adresse de la boutique (avec `/fr` si la boutique a un préfixe de langue). |
+| `plateforme` | `shopify`, `woocommerce`, `prestashop` ou `auto` (défaut : détectée au démarrage). |
+| `categories` | Shopify : handles des catégories à surveiller, si la détection automatique ne les trouve pas. |
+| `recherches` | Termes de recherche propres à cette boutique (défaut : ceux de `collection.json`). |
+| `prix_max` | Plafond pour toute la boutique (remplace ceux de `collection.json`). |
+| `intervalle_secondes` | Délai minimal entre deux vérifications de cette boutique (défaut : chaque cycle ; 120 s pour une boutique lue fiche par fiche). |
+| `actif` | `false` pour mettre la boutique en pause. |
+
+**Autre site** : ajoute la fiche dans `produits.json` :
+
+```json
+{
+  "boutique": "UltraJeux",
+  "nom": "Coffret Dresseur d'Élite 30 ans",
+  "url": "https://www.ultrajeux.com/produit-32960-....html",
+  "type": "texte"
+}
+```
+
+| Champ | Description |
+|---|---|
+| `boutique`, `nom`, `url` | Boutique et nom affichés, adresse de la fiche. Le nom sert à classer le produit (ETB, UPC…). |
+| `item` | Force le produit (`etb`, `bundle`, `upc-journee`… voir `collection.json`). |
+| `type` | `shopify`, `woocommerce`, `prestashop`, `texte` ou `auto` (défaut). |
+| `mots_rupture` / `mots_stock` | Type `texte` : rupture si un mot de rupture apparaît / en stock si un mot de stock apparaît. |
+| `regex_rupture` / `regex_stock` | Type `texte` : expression régulière sur le HTML brut. |
+| `variante` | Shopify : ne surveiller que les variantes dont le titre contient ce texte. |
+| `prix_max` | Plafond pour cette fiche. |
+| `actif`, `note` | Pause sans suppression ; commentaire libre. |
+
+Le type `texte` lit d'abord les données structurées de la page (schema.org
+`InStock` / `OutOfStock`, Proximis de JouéClub…), puis `regex_*`, puis les mots
+du texte visible. Il refuse de conclure « en stock » sur une page presque vide.
+
+Ensuite : *Tester les boutiques* sans option lance un diagnostic complet de
+`boutiques.json` et `produits.json` (fiches trouvées, prix, erreurs, extraits
+de page pour régler une fiche `texte`).
+
+## Ajuster la gamme
+
+`collection.json` décrit chaque produit : `motifs` (mots du titre, « a + b »
+exige les deux), `prix_max` (plafond) et `prix_min` (plancher). Le premier
+produit qui correspond l'emporte, les plus précis sont donc en premier.
+`marqueurs` dit ce qui fait partie de la gamme (30e anniversaire, 30 ans,
+30th, ME05.5…) et `exclusions` ce qui n'en fait jamais partie.
 
 ## Surveiller les grandes enseignes depuis ton PC
 
-Le workflow `monitor-pc.yml` exécute le même script sur ton ordinateur, avec
-ton adresse IP de box, via un *runner auto-hébergé* GitHub. Les alertes arrivent
-sur le même Discord.
+Amazon, Carrefour et Courses U bloquent les serveurs GitHub mais répondent
+depuis une box internet. Le workflow **Moniteur de stock (PC)** exécute le
+moniteur sur ton ordinateur avec `produits-pc.json`, via un *runner
+auto-hébergé* GitHub. Les alertes arrivent sur le même Discord.
 
 1. Installe Python 3.12 depuis https://www.python.org/downloads/ en cochant
    **Add python.exe to PATH** et, dans *Customize installation*, **Install for
@@ -58,89 +198,44 @@ sur le même Discord.
 2. Sur GitHub : *Settings → Actions → Runners → New self-hosted runner*, choisis
    ton système et copie-colle les commandes affichées dans un terminal. À la
    question « run as service », réponds `Y` pour qu'il démarre avec le PC.
-3. Onglet *Actions* → *Tester les boutiques* → *Run workflow* avec le choix `pc`
-   pour vérifier ce que chaque enseigne répond depuis chez toi.
-4. Onglet *Actions* → *Moniteur de stock (PC)* → *Run workflow*.
+3. *Tester les boutiques* → *Run workflow* avec le choix `pc` pour vérifier ce
+   que chaque enseigne répond depuis chez toi.
+4. *Moniteur de stock (PC)* → *Run workflow*.
 
-Pour retrouver les fiches produit des enseignes sur une page « où acheter »
-(LeCrocoDeal, etc.) : *Tester les boutiques* → *Run workflow* en renseignant
-le champ « page_liens » avec l'adresse de la page, ou en local :
-`python moniteur.py --liens URL`.
+Fnac, Cdiscount et Smyths exigent un vrai navigateur (Datadome, PerimeterX) et
+restent hors de portée : garde leurs alertes officielles. MediaMarkt est à
+vérifier avec *Tester les boutiques* en mode `pc`.
 
-Le PC doit rester allumé (un Raspberry Pi convient). Si une enseigne affiche
-« page anti-robot » même depuis chez toi, elle exige un vrai navigateur : garde
-ses alertes officielles.
+Pour retrouver les fiches des enseignes depuis une page « où acheter »
+(comparateur, article) : *Tester les boutiques* avec le champ « page_liens »,
+ou `python moniteur.py --liens URL`.
 
-## Ajouter une boutique
-
-Ajoute une entrée dans `produits.json`, puis lance le workflow **Tester les
-boutiques** (onglet *Actions*) : il vérifie chaque produit une fois, sans Discord,
-et affiche des extraits de la page pour choisir le bon réglage.
-
-```json
-[
-  {
-    "nom": "LorenZone ETB 30 ans",
-    "url": "https://lorenzone.fr/products/etb-30eme-anniversaire",
-    "type": "shopify"
-  },
-  {
-    "nom": "Boutique PrestaShop",
-    "url": "https://exemple.fr/pokemon/1234-etb-30-ans.html",
-    "type": "prestashop"
-  },
-  {
-    "nom": "Site sans API",
-    "url": "https://exemple.fr/etb-151",
-    "type": "texte",
-    "mots_rupture": ["rupture", "épuisé", "me prévenir"],
-    "prix_max": 80
-  },
-  {
-    "nom": "Je ne sais pas quel type",
-    "url": "https://exemple.fr/produit/xyz",
-    "type": "auto"
-  }
-]
-```
-
-| Champ | Obligatoire | Description |
-|---|---|---|
-| `nom` | oui | Nom affiché dans l'alerte. |
-| `url` | oui | Page du produit. |
-| `type` | non | `shopify`, `woocommerce`, `prestashop`, `texte` ou `auto` (défaut : `auto`, essaie les quatre dans l'ordre et mémorise le bon). |
-| `mots_rupture` | non | Type `texte` : produit dispo si **aucun** de ces mots n'apparaît dans le texte visible. Défaut : `rupture`, `épuisé`, `indisponible`, `sold out`, `plus disponible`, `me prévenir`. |
-| `mots_stock` | non | Type `texte` : produit dispo si **un** de ces mots apparaît (ex. `"ajouter au panier"`). Prioritaire sur `mots_rupture`. |
-| `regex_rupture` | non | Type `texte` : expression régulière sur le HTML brut, rupture si elle matche (ex. `class="dispoFiche"[^>]*>\s*RUPTURE`). |
-| `regex_stock` | non | Type `texte` : expression régulière sur le HTML brut, en stock si elle matche. |
-| `variante` | non | Shopify : ne surveiller que les variantes dont le titre contient ce texte (ex. `"ETB"`). |
-| `prix_max` | non | Prix plafond pour ce produit (remplace `PRIX_MAX`). |
-| `actif` | non | `false` pour mettre un produit en pause sans le supprimer. |
-| `note` | non | Commentaire libre, ignoré par le script. |
-
-Quel type choisir ?
-
-- **shopify** : l'URL contient `/products/`. Le plus fiable (JSON officiel, prix
-  exact, variantes). Pour vérifier : ouvre `https://boutique/products/xxx.js`.
-- **woocommerce** : site WordPress, URL en `/produit/` ou `/product/`. Utilise
-  l'API publique du magasin.
-- **prestashop** : URL du type `/1234-nom-du-produit.html`. Lit les données
-  produit intégrées à la page (disponibilité, quantité, prix).
-- **texte** : tout le reste. Le script lit d'abord les données structurées
-  schema.org de la page (`InStock` / `OutOfStock`), sinon `regex_*`, sinon les
-  mots (texte visible seulement, accents et majuscules ignorés).
-- **auto** : essaie les quatre et mémorise le bon.
-
-## Tester en local
+## En local
 
 ```bash
-python moniteur.py --diagnostic                     # un passage détaillé, sans Discord
-FICHIER_PRODUITS=produits-pc.json python moniteur.py --diagnostic   # idem pour les enseignes
-python moniteur.py --une-fois                       # un cycle normal, sans Discord
+python moniteur.py --diagnostic                   # un passage détaillé, sans Discord
+python moniteur.py --decouvrir https://boutique.fr  # tester une boutique (ou une fiche produit)
+python moniteur.py --une-fois                     # un cycle normal
 DISCORD_WEBHOOK=https://discord.com/api/webhooks/... python moniteur.py --test-discord
+python -m unittest discover -s tests              # tests (hors ligne)
 ```
 
-Réglages par variables d'environnement (ou variables de dépôt GitHub pour le
-workflow) : `DUREE_MINUTES` (350), `INTERVALLE_SECONDES` (60), `TIMEOUT_SECONDES`
-(15), `PRIX_MAX` (100), `ANTI_SPAM_MINUTES` (10), `ALERTE_RUPTURE=1` pour être
-prévenu aussi quand un produit repasse en rupture.
+Réglages (variables d'environnement ou variables de dépôt) : `DUREE_MINUTES`
+(350 sur GitHub), `INTERVALLE_SECONDES` (30), `DECOUVERTE_MINUTES` (15),
+`TIMEOUT_SECONDES` (15), `LANGUES` (`fr`), `PRIX_MAX`, `ANTI_SPAM_MINUTES` (10),
+`ALERTE_RUPTURE=1` pour être prévenu aussi des ruptures.
+
+## Organisation du code
+
+```
+moniteur.py               point d'entrée
+moniteur_etb/
+  collection.py           reconnaître et classer un produit de la gamme
+  boutiques.py            découverte et vérification d'une boutique entière
+  pages.py                vérification d'une fiche précise (produits.json)
+  surveillance.py         cycles, décisions d'alerte, état
+  discord.py              messages Discord (embeds groupés)
+  http.py                 téléchargements, pauses par site
+  diagnostic.py           --diagnostic, --decouvrir, --liens
+tests/                    tests unitaires hors ligne
+```

@@ -1,20 +1,37 @@
 [
   {
-    "nom": "Amazon ETB 30 ans",
+    "boutique": "Amazon",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
     "url": "https://www.amazon.fr/dp/B0H8SVJL9F",
     "type": "texte",
     "regex_stock": "id=\"add-to-cart-button\"",
     "note": "En stock si le bouton Ajouter au panier de la boîte d'achat est présent (« Disponible sur invitation » = pas en stock). Prix lu dans la page, filtré par PRIX_MAX."
   },
   {
-    "nom": "Cdiscount ETB 30 ans",
+    "boutique": "MediaMarkt (BE)",
+    "nom": "Bundle 6 boosters 30 ans",
+    "url": "https://www.mediamarkt.be/fr/product/_30th-anniversary-6-bo-bundle-cartes-pokemon-2251005.html",
+    "type": "texte",
+    "note": "MediaMarkt répond 403 aux serveurs GitHub : à tester depuis le PC."
+  },
+  {
+    "boutique": "MediaMarkt (BE)",
+    "nom": "Mini Tin 30 ans",
+    "url": "https://www.mediamarkt.be/fr/product/_pokemon-30th-anniversary-mini-tin-pokemon-cards-pokemon-cards-2251004.html",
+    "type": "texte",
+    "note": "MediaMarkt répond 403 aux serveurs GitHub : à tester depuis le PC."
+  },
+  {
+    "boutique": "Cdiscount",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
     "url": "https://www.cdiscount.com/juniors/jeux-de-societe-cartes/pokemon-etb-coffret-dresseur-d-elite-30e-anniv/f-12079160406-pok196214144835.html",
     "type": "texte",
     "actif": false,
     "note": "Cdiscount renvoie une page de défi JavaScript même depuis une box : il faut un vrai navigateur."
   },
   {
-    "nom": "Cultura ETB 30 ans (recherche EAN)",
+    "boutique": "Cultura",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
     "url": "https://www.cultura.com/search/results?search_query=0196214144835",
     "type": "texte",
     "mots_stock": [
@@ -24,7 +41,8 @@
     "actif": false
   },
   {
-    "nom": "Courses U ETB 30 ans",
+    "boutique": "Courses U",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
     "url": "https://www.coursesu.com/p/coffret-dresseur-asmodee/1833259.html",
     "type": "texte",
     "note": "Drive Système U : le stock dépend du magasin choisi ; sans magasin la page dit « Bientôt disponible ».",
@@ -36,34 +54,39 @@
     ]
   },
   {
-    "nom": "Fnac ETB 30 ans",
+    "boutique": "Fnac",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
     "url": "https://www.fnac.com/Cartes-a-collectionner-Pokemon-30A-Coffret-Dresseur-d-Elite/a23200296/w-4",
     "type": "texte",
     "actif": false,
     "note": "Fnac (Datadome) répond 403 même depuis une box : il faut un vrai navigateur. Garde l'alerte « M'alerter » de Fnac."
   },
   {
-    "nom": "Carrefour ETB 30 ans",
+    "boutique": "Carrefour",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
     "url": "https://www.carrefour.fr/p/cartes-a-jouer-et-a-collectionner-coffret-dresseur-d-elite-30e-anniversaire-pokemon-0196214144835",
     "type": "texte",
     "note": "Lu via schema.org (OutOfStock / InStock). Fonctionne depuis une box, pas depuis GitHub."
   },
   {
-    "nom": "Smyths Toys ETB 30 ans",
+    "boutique": "Smyths Toys",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
     "url": "https://www.smythstoys.com/fr/fr-fr/jouets/jeux-de-societe-et-puzzles/cartes-a-collectionner/cartes-pokemon/pokemon-coffret-dresseur-delite-30eme-anniversaire/p/261821",
     "type": "texte",
     "actif": false,
     "note": "Smyths (PerimeterX) bloque aussi depuis une box : il faut un vrai navigateur."
   },
   {
-    "nom": "King Jouet ETB 30 ans",
+    "boutique": "King Jouet",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
     "url": "https://www.king-jouet.com/jeu-jouet/jeux-societes/cartes-a-collectionner/ref-1034916-pokemon-30-ans-coffret-dresseur-d-elite.htm",
     "type": "texte",
     "actif": false,
     "note": "Fiche retirée (410). Remplacer l'URL quand King Jouet republie le produit."
   },
   {
-    "nom": "Play-in ETB 30 ans",
+    "boutique": "Play-in",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
     "url": "https://www.play-in.com/fr/produit/659570/coffret-dresseur-d-elite-etb-30-ans-pokemon-fr",
     "type": "texte",
     "actif": false,

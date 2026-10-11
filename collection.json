@@ -1,0 +1,229 @@
+{
+  "nom": "Pokémon 30e Anniversaire",
+  "note": "Gamme JCC Pokémon 30e Anniversaire (30th Celebration, sorties du 16/09 au 06/11/2026). Une fiche trouvée par recherche doit contenir un marqueur (30 ans…) et un mot « requis » (Pokémon, booster, bundle… : écarte les figurines Shrek 30th des boutiques généralistes). Les motifs sont comparés au titre de la fiche sans accents ni ponctuation ; « a + b » exige les deux. Le premier item qui correspond l'emporte : les plus précis d'abord. prix_max = plafond anti-spéculateurs en euros ; en dessous de prix_min, ce n'est pas ce produit (protection acrylique, carte seule…).",
+  "recherches": [
+    "anniversaire",
+    "30 ans",
+    "30th",
+    "ultra premium",
+    "mini tin",
+    "nymphali",
+    "premiers partenaires",
+    "deck de combat"
+  ],
+  "marqueurs": [
+    "\\b30 ?(e|eme|ieme|th|em)? ?(anniversaire|anniv|anniversary|ans|celebration)\\b",
+    "\\b30th\\b",
+    "\\b30a\\b",
+    "\\bcel ?30\\b",
+    "\\bme ?0?5 ?5\\b",
+    "\\b(pokemon day|journee pokemon)\\b.*\\b2026\\b"
+  ],
+  "requis": [
+    "pokemon", "jcc", "pikachu", "dresseur", "etb", "elite trainer", "pokebox", "upc", "ultra premium",
+    "nymphali", "amphinobi", "mentali", "noctali", "metamorph", "evoli", "mew", "mewtwo",
+    "noadkoko", "lucario", "premiers partenaires", "cel30",
+    "booster", "boosters", "bundle", "mini tin", "duopack", "duo pack", "tripack", "classeur",
+    "k o", "knock out", "poster"
+  ],
+  "exclusions": [
+    "magic", "mtg", "yu gi oh", "yugioh", "lorcana", "one piece", "dragon ball", "digimon", "disney", "panini",
+    "flesh and blood", "star wars", "riftbound", "altered", "union arena", "weiss schwarz", "naruto", "v tes",
+    "carte a l unite", "cartes a l unite", "psa", "pca", "cgc", "bgs", "collect aura", "collectaura", "gradee", "graded", "slab", "sar", "m6a",
+    "protege cartes", "protege carte", "sleeves", "pochettes", "toploader", "top loader", "playmat",
+    "vitrine", "ultra pro", "dragon shield", "gamegenic", "deck box", "card box", "sac", "sacoche",
+    "funko", "peluche", "peluches", "plush", "battle figure", "charm", "porte cle", "keychain", "badge",
+    "piece de collection", "statuette", "figure metal", "pokeball led",
+    "boite vide", "vide", "empty", "sans booster", "sans boosters", "case de", "carton de",
+    "code booster", "codes booster", "code en ligne", "codes en ligne", "lot de codes",
+    "occasion", "ouvert", "display",
+    "25e anniversaire", "25eme anniversaire", "25 ans", "25th", "celebrations"
+  ],
+  "item_defaut": {"nom": "Autre produit 30 ans", "emoji": "✨", "prix_max": 150},
+  "items": [
+    {
+      "id": "etb-pokemon-center",
+      "nom": "Coffret Dresseur d'Élite Pokémon Center",
+      "emoji": "🏆",
+      "prix_max": 130,
+      "prix_min": 50,
+      "motifs": ["dresseur d'élite + pokémon center", "etb + pokémon center", "elite trainer box + pokémon center", "dresseur d'élite + 11 boosters", "etb + 11 boosters"]
+    },
+    {
+      "id": "etb",
+      "nom": "Coffret Dresseur d'Élite (ETB)",
+      "emoji": "📦",
+      "prix_max": 100,
+      "prix_min": 40,
+      "motifs": ["dresseur d'élite", "dresseur elite", "etb", "elite trainer box", "elite trainer"]
+    },
+    {
+      "id": "upc-journee",
+      "nom": "Collection Ultra-Premium Journée (Mentali)",
+      "emoji": "☀️",
+      "prix_max": 300,
+      "prix_min": 120,
+      "motifs": ["ultra premium + journée", "ultra premium + jour", "ultra premium + day", "upc + journée", "upc + day", "ultra premium + mentali", "ultra + mentali", "upc + mentali", "ultra premium + espeon", "upc + espeon"]
+    },
+    {
+      "id": "upc-soiree",
+      "nom": "Collection Ultra-Premium Soirée (Noctali)",
+      "emoji": "🌙",
+      "prix_max": 300,
+      "prix_min": 120,
+      "motifs": ["ultra premium + soirée", "ultra premium + nuit", "ultra premium + night", "upc + soirée", "upc + night", "ultra premium + noctali", "ultra + noctali", "upc + noctali", "ultra premium + umbreon", "upc + umbreon"]
+    },
+    {
+      "id": "upc",
+      "nom": "Collection Ultra-Premium",
+      "emoji": "💎",
+      "prix_max": 300,
+      "prix_min": 120,
+      "motifs": ["ultra premium", "ultrapremium", "upc"]
+    },
+    {
+      "id": "metamorph-premium",
+      "nom": "Collection Premium Métamorph",
+      "emoji": "🟣",
+      "prix_max": 80,
+      "prix_min": 25,
+      "motifs": ["métamorph", "ditto"]
+    },
+    {
+      "id": "deck-combat",
+      "nom": "Deck de Combat Mentali-ex / Noctali-ex",
+      "emoji": "⚔️",
+      "prix_max": 30,
+      "prix_min": 10,
+      "motifs": ["deck de combat", "decks de combat", "deck combat", "battle deck", "deck + mentali", "deck + noctali", "deck + espeon", "deck + umbreon"]
+    },
+    {
+      "id": "classeur",
+      "nom": "Collection Classeur",
+      "emoji": "📒",
+      "prix_max": 60,
+      "prix_min": 20,
+      "motifs": ["collection + classeur", "coffret + classeur", "classeur + boosters", "binder collection", "collection + binder"]
+    },
+    {
+      "id": "mini-tin",
+      "nom": "Mini Tin Jour / Nuit",
+      "emoji": "🥫",
+      "prix_max": 25,
+      "prix_min": 7,
+      "motifs": ["mini tin", "mini tins", "minitin", "mini boite", "mini boites", "mini pokebox", "mini poke box"]
+    },
+    {
+      "id": "bundle",
+      "nom": "Bundle 6 boosters",
+      "emoji": "🎁",
+      "prix_max": 70,
+      "prix_min": 25,
+      "motifs": ["bundle", "lot de boosters", "lot de 6 boosters", "6 boosters", "booster bundle", "pack de 6"]
+    },
+    {
+      "id": "pokebox",
+      "nom": "Pokébox Nymphali / Amphinobi",
+      "emoji": "🥫",
+      "prix_max": 45,
+      "prix_min": 15,
+      "motifs": ["pokébox", "poke box", "tin"]
+    },
+    {
+      "id": "coffret-ex",
+      "nom": "Coffret Nymphali-ex / Amphinobi-ex",
+      "emoji": "🎀",
+      "prix_max": 45,
+      "prix_min": 15,
+      "motifs": ["nymphali", "amphinobi", "sylveon", "greninja", "ex box", "coffret + 4 boosters"]
+    },
+    {
+      "id": "poster",
+      "nom": "Collection Poster",
+      "emoji": "🖼️",
+      "prix_max": 40,
+      "prix_min": 12,
+      "motifs": ["poster"]
+    },
+    {
+      "id": "autocollants",
+      "nom": "Collection Autocollants (Noadkoko / Lucario)",
+      "emoji": "🏷️",
+      "prix_max": 32,
+      "prix_min": 10,
+      "motifs": ["autocollant", "autocollants", "autocolant", "sticker", "stickers", "noadkoko", "exeggutor", "lucario"]
+    },
+    {
+      "id": "figurine",
+      "nom": "Collection Figurine Mew / Mewtwo",
+      "emoji": "🧸",
+      "prix_max": 65,
+      "prix_min": 15,
+      "motifs": ["collection + figurine", "coffret + figurine", "figure collection", "figurine + mew", "figurine + mewtwo", "collection + mewtwo", "collection + mew", "coffret + mewtwo", "coffret + mew"]
+    },
+    {
+      "id": "premiers-partenaires-pins",
+      "nom": "Collection Pin's Deluxe Premiers Partenaires",
+      "emoji": "📌",
+      "prix_max": 60,
+      "prix_min": 15,
+      "motifs": ["pin + premiers partenaires", "pins + premiers partenaires", "pin + first partner", "deluxe pin"]
+    },
+    {
+      "id": "premiers-partenaires",
+      "nom": "Collection Illustration Premiers Partenaires",
+      "emoji": "🌱",
+      "prix_max": 60,
+      "prix_min": 15,
+      "motifs": ["premiers partenaires", "first partner", "first partners"]
+    },
+    {
+      "id": "pokemon-day",
+      "nom": "Coffret Journée Pokémon (Pokémon Day 2026)",
+      "emoji": "🎂",
+      "prix_max": 45,
+      "prix_min": 15,
+      "motifs": ["pokemon day", "journee pokemon", "journee + 2026", "coffret journee"]
+    },
+    {
+      "id": "collection-ko",
+      "nom": "Collection K.O.",
+      "emoji": "🥊",
+      "prix_max": 22,
+      "prix_min": 7,
+      "motifs": ["collection k o", "k o collection", "coffret k o", "knock out", "knockout", "collection ko", "ko collection", "coffret ko"]
+    },
+    {
+      "id": "tripack",
+      "nom": "Tripack (3 boosters)",
+      "emoji": "🃏",
+      "prix_max": 28,
+      "prix_min": 9,
+      "motifs": ["tripack", "tri pack", "3 boosters", "3 pack", "3 packs", "blister + 3"]
+    },
+    {
+      "id": "duopack",
+      "nom": "Duopack Évoli (2 boosters)",
+      "emoji": "🃏",
+      "prix_max": 20,
+      "prix_min": 6,
+      "motifs": ["duopack", "duo pack", "blister", "2 boosters", "2 pack", "2 packs"]
+    },
+    {
+      "id": "booster",
+      "nom": "Booster à l'unité",
+      "emoji": "🎴",
+      "prix_max": 9,
+      "prix_min": 3,
+      "motifs": ["booster"],
+      "exclure": ["coffret", "collection", "box", "lot", "tin", "boite", "bundle", "pack", "boosters", "x"]
+    },
+    {
+      "id": "autre",
+      "nom": "Autre produit 30 ans",
+      "emoji": "✨",
+      "prix_max": 150,
+      "motifs": ["coffret", "collection", "box", "pack", "boite", "lot", "set", "kit", "blister"]
+    }
+  ]
+}

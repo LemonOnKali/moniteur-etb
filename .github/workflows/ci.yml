@@ -1,0 +1,27 @@
+name: Tests
+
+# Tests unitaires hors ligne (aucune boutique contactée) à chaque push.
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Tests unitaires
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Vérifier les fichiers JSON
+        run: |
+          for f in collection.json boutiques.json produits.json produits-pc.json; do
+            python -m json.tool "$f" > /dev/null || { echo "::error file=$f::JSON invalide"; exit 1; }
+          done
+      - name: Tests
+        run: python -m unittest discover -s tests -v
