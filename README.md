@@ -71,7 +71,11 @@ Play-in (stock chargé en JavaScript), Pokémon Center.
 - **Vérification toutes les 30 s**, toutes les boutiques **en parallèle**. Une
   boutique entière ne coûte que 1 à 3 requêtes par cycle (catégorie Shopify,
   liste d'ids WooCommerce, recherche PrestaShop).
-- **Recherche de nouvelles fiches toutes les 15 min** dans chaque boutique.
+- **Recherche de nouvelles fiches toutes les 15 min** dans chaque boutique,
+  étalée sur plusieurs cycles (3 boutiques au plus par cycle).
+- Shopify limite le débit par adresse IP sur l'ensemble de ses boutiques : les
+  requêtes Shopify passent par une file commune (1,5 s d'écart, ralentie
+  automatiquement si Shopify répond 429).
 - **Alerte uniquement au passage en stock** (ou quand le prix repasse sous le
   plafond). L'état est conservé entre les exécutions : pas de doublon, et
   jamais deux alertes à moins de 10 min pour une même fiche.
