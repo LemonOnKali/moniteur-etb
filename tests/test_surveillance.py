@@ -132,7 +132,9 @@ class TestDecouvertesEtalees(unittest.TestCase):
     def test_trois_par_cycle(self):
         from moniteur_etb import surveillance as surv
 
-        boutiques = [Boutique(nom=f"B{i}", url=f"https://b{i}.fr", derniere_decouverte=1.0) for i in range(7)]
+        # Découvertes faites il y a une heure : toutes dues (horloge monotone, indépendante de l'uptime).
+        il_y_a_une_heure = time.monotonic() - 3600
+        boutiques = [Boutique(nom=f"B{i}", url=f"https://b{i}.fr", derniere_decouverte=il_y_a_une_heure) for i in range(7)]
         s = Surveillance(Reglages(), COLLECTION, [], boutiques, FauxDiscord(), {})
         appels = []
 
