@@ -12,21 +12,27 @@ anti-spéculateurs :
 
 | Produit | Plafond |
 |---|---|
-| 📦 Coffret Dresseur d'Élite (ETB) | 100 € |
 | 🏆 Coffret Dresseur d'Élite Pokémon Center | 130 € |
-| ☀️ 🌙 Collections Ultra-Premium Journée (Mentali) / Soirée (Noctali) | 300 € |
+| 📦 Coffret Dresseur d'Élite (ETB) | 100 € |
+| ☀️ Collection Ultra-Premium Journée (Mentali) | 300 € |
+| 🌙 Collection Ultra-Premium Soirée (Noctali) | 300 € |
+| 💎 Collection Ultra-Premium | 300 € |
 | 🟣 Collection Premium Métamorph | 80 € |
-| 🧸 Collections Figurine Mew / Mewtwo | 65 € |
-| 🎁 Bundle 6 boosters | 60 € |
+| ⚔️ Deck de Combat Mentali-ex / Noctali-ex | 30 € |
 | 📒 Collection Classeur | 60 € |
-| 🎀 Coffrets Nymphali-ex / Amphinobi-ex · 🥫 Pokébox | 45 € |
-| 🎂 Coffret Pokémon Day 2026 | 45 € |
+| 🥫 Mini Tin Jour / Nuit | 25 € |
+| 🎁 Bundle 6 boosters | 70 € |
+| 🥫 Pokébox Nymphali / Amphinobi | 45 € |
+| 🎀 Coffret Nymphali-ex / Amphinobi-ex | 45 € |
 | 🖼️ Collection Poster | 40 € |
-| 🏷️ Collections Autocollants (Noadkoko / Lucario) | 32 € |
-| ⚔️ Decks de Combat Mentali-ex / Noctali-ex | 30 € |
-| 🃏 Tripack · Duopack Évoli | 28 € · 20 € |
-| 🥫 Mini Tins Jour / Nuit | 25 € |
+| 🏷️ Collection Autocollants (Noadkoko / Lucario) | 32 € |
+| 🧸 Collection Figurine Mew / Mewtwo | 65 € |
+| 📌 Collection Pin's Deluxe Premiers Partenaires | 60 € |
+| 🌱 Collection Illustration Premiers Partenaires | 60 € |
+| 🎂 Coffret Journée Pokémon (Pokémon Day 2026) | 45 € |
 | 🥊 Collection K.O. | 22 € |
+| 🃏 Tripack (3 boosters) | 28 € |
+| 🃏 Duopack Évoli (2 boosters) | 20 € |
 | 🎴 Booster à l'unité | 9 € |
 
 Les cartes à l'unité, cartes gradées, accessoires (protections, sleeves…),
