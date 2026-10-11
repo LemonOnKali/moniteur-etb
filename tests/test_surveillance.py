@@ -108,6 +108,44 @@ class TestRythme(unittest.TestCase):
         self.assertTrue(b.verification_due())
 
 
+class TestCadence(unittest.TestCase):
+    def test_file_commune_et_ralentissement(self):
+        from moniteur_etb.http import Cadence
+
+        c = Cadence(intervalle=1.5, minimum=1.0, maximum=4.0)
+        c.ralentir()
+        self.assertEqual(c.intervalle, 2.25)
+        for _ in range(3):
+            c.ralentir()
+        self.assertEqual(c.intervalle, 4.0)  # plafonné
+        c.intervalle = 1.0
+        c.accelerer()
+        self.assertEqual(c.intervalle, 1.0)  # jamais sous le minimum
+        c._prochain = 0.0
+        with mock.patch("moniteur_etb.http.time.sleep") as dormir:
+            c.attendre()
+            c.attendre()
+        dormir.assert_called_once()  # la 2e requête attend son tour
+
+
+class TestDecouvertesEtalees(unittest.TestCase):
+    def test_trois_par_cycle(self):
+        from moniteur_etb import surveillance as surv
+
+        boutiques = [Boutique(nom=f"B{i}", url=f"https://b{i}.fr", derniere_decouverte=1.0) for i in range(7)]
+        s = Surveillance(Reglages(), COLLECTION, [], boutiques, FauxDiscord(), {})
+        appels = []
+
+        def faux_analyser(b, collection, langues, decouvrir):
+            appels.append(decouvrir)
+            return Analyse(offres=[], autres=[])
+
+        with mock.patch.object(surv, "analyser", faux_analyser), ThreadPoolExecutor(max_workers=2) as ex:
+            s.verifier_tout(ex)
+        self.assertEqual(sum(appels), surv.MAX_DECOUVERTES_PAR_CYCLE)
+        self.assertEqual(len(appels), 7)
+
+
 class TestDiscordPaquets(unittest.TestCase):
     def test_paquets_de_dix(self):
         from moniteur_etb.discord import Discord

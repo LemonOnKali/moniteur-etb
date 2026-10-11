@@ -164,7 +164,8 @@ def lire_produit_shopify_js(donnees: Any, variante: str | None = None) -> Result
 
 
 def verifier_shopify(produit: Produit) -> Resultat:
-    return lire_produit_shopify_js(telecharger_json(url_shopify_js(produit.url)), produit.variante)
+    donnees = telecharger_json(url_shopify_js(produit.url), cadence="shopify")
+    return lire_produit_shopify_js(donnees, produit.variante)
 
 
 def lire_produit_woocommerce(fiche: Any) -> Resultat:

@@ -22,6 +22,9 @@ from .reglages import Reglages
 from .texte import formater_prix
 
 
+MAX_DECOUVERTES_PAR_CYCLE = 3  # hors premier cycle, où chaque boutique est découverte
+
+
 def log(message: str) -> None:
     print(f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] {message}", flush=True)
 
@@ -156,8 +159,13 @@ class Surveillance:
         bilan = Bilan()
         intervalle_decouverte = self.reglages.decouverte_minutes * 60
         futurs: dict[Any, Boutique | Produit] = {}
+        # Découvertes étalées : quelques boutiques par cycle (les plus anciennes d'abord)
+        # plutôt que toutes en même temps toutes les 15 min.
+        dues = sorted((b for b in self.boutiques if b.decouverte_due(intervalle_decouverte)),
+                      key=lambda b: b.derniere_decouverte or 0.0)
+        a_decouvrir = {id(b) for b in (dues if forcer_decouverte else dues[:MAX_DECOUVERTES_PAR_CYCLE])}
         for b in self.boutiques:
-            decouvrir = forcer_decouverte or b.decouverte_due(intervalle_decouverte)
+            decouvrir = b.derniere_decouverte is None or id(b) in a_decouvrir
             if not decouvrir and not b.verification_due():
                 continue
             futurs[executeur.submit(analyser, b, self.collection, self.reglages.langues, decouvrir)] = b

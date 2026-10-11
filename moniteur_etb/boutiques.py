@@ -42,9 +42,8 @@ from .texte import lire_prix, mots
 PLATEFORMES = {"shopify", "woocommerce", "prestashop", "auto"}
 MAX_FICHES_PAGE = 20  # PrestaShop sans recherche JSON : fiches lues une à une, au plus
 PRESTA_HTML_INTERVALLE_S = 120  # … et vérifiées moins souvent que les autres
-# Délai entre deux recherches d'une même boutique pendant la découverte :
-# la recherche Shopify (search/suggest.json) répond 429 au-delà de ~5 requêtes en rafale.
-ESPACEMENT_S = {"shopify": 2.5, "woocommerce": 0.5, "prestashop": 0.5}
+# Délai entre deux recherches d'une même boutique pendant la découverte.
+ESPACEMENT_S = {"shopify": 0.0, "woocommerce": 0.5, "prestashop": 0.5}  # Shopify : file commune (http.CADENCES)
 _attendre = time.sleep  # remplacé dans les tests
 RECHERCHES_AVEC_CATEGORIE = 3  # Shopify : la catégorie couvre l'essentiel, peu de recherches en plus
 # Catégories Shopify à ignorer même si elles parlent de 30 ans (pas des produits scellés).
@@ -216,7 +215,7 @@ def _shopify_categories(b: Boutique, collection: Collection, langues: frozenset[
     """
     trouvees: list[str] = []
     for page in range(1, 5):
-        donnees = telecharger_json(f"{b.racine}/collections.json?limit=250&page={page}")
+        donnees = telecharger_json(f"{b.racine}/collections.json?limit=250&page={page}", cadence="shopify")
         cols = donnees.get("collections") if isinstance(donnees, dict) else None
         if not isinstance(cols, list):
             raise ErreurVerification("collections.json illisible")
@@ -236,7 +235,7 @@ def _shopify_categories(b: Boutique, collection: Collection, langues: frozenset[
 def _shopify_source(b: Boutique, source: str, filtre: FiltreVariante) -> list[Fiche]:
     genre, _, valeur = source.partition(":")
     if genre == "categorie":
-        donnees = telecharger_json(f"{b.racine}/collections/{quote(valeur)}/products.json?limit=250")
+        donnees = telecharger_json(f"{b.racine}/collections/{quote(valeur)}/products.json?limit=250", cadence="shopify")
         produits = donnees.get("products") if isinstance(donnees, dict) else None
         if not isinstance(produits, list):
             raise ErreurVerification(f"catégorie Shopify « {valeur} » illisible")
@@ -246,6 +245,7 @@ def _shopify_source(b: Boutique, source: str, filtre: FiltreVariante) -> list[Fi
         f"{b.racine}/search/suggest.json?q={quote(valeur)}&resources[type]=product"
         "&resources[limit]=10&resources[options][unavailable_products]=show",
         pause=False,
+        cadence="shopify",
     )
     try:
         produits = donnees["resources"]["results"]["products"]
@@ -478,7 +478,7 @@ def analyser(b: Boutique, collection: Collection, langues: frozenset[str], decou
             sources = couverture(b.sources)
 
         for i, source in enumerate(sources):
-            if decouvrir and i and source.startswith("recherche:"):
+            if decouvrir and i and source.startswith("recherche:") and ESPACEMENT_S.get(b.detectee or "", 0.5):
                 _attendre(ESPACEMENT_S.get(b.detectee or "", 0.5))
             analyse.requetes += 1
             try:

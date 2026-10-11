@@ -100,6 +100,43 @@ class _Pauses:
 PAUSES = _Pauses()
 
 
+class Cadence:
+    """Espacement minimal entre deux requêtes d'un même groupe de sites, partagé entre threads.
+
+    Shopify limite le débit par adresse IP sur l'ensemble de ses boutiques : dix
+    boutiques Shopify interrogées en rafale depuis le même serveur répondent toutes
+    429. Les requêtes Shopify passent donc à la file, avec un écart qui s'allonge
+    après un 429 et se resserre doucement tant que tout va bien.
+    """
+
+    def __init__(self, intervalle: float, minimum: float, maximum: float):
+        self.intervalle = intervalle
+        self.minimum = minimum
+        self.maximum = maximum
+        self._prochain = 0.0
+        self._verrou = threading.Lock()
+
+    def attendre(self) -> None:
+        with self._verrou:
+            maintenant = time.monotonic()
+            depart = max(maintenant, self._prochain)
+            self._prochain = depart + self.intervalle
+        if depart > maintenant:
+            time.sleep(depart - maintenant)
+
+    def ralentir(self) -> None:
+        with self._verrou:
+            self.intervalle = min(self.maximum, self.intervalle * 1.5)
+            self._prochain = time.monotonic() + self.intervalle * 3
+
+    def accelerer(self) -> None:
+        with self._verrou:
+            self.intervalle = max(self.minimum, self.intervalle * 0.99)
+
+
+CADENCES = {"shopify": Cadence(intervalle=1.5, minimum=1.2, maximum=8.0)}
+
+
 def en_pause(url: str) -> bool:
     """Vrai si l'hôte de `url` est en pause : inutile d'essayer d'autres URL du même site."""
     return PAUSES.restant(urlsplit(url).hostname or "") > 0
@@ -144,25 +181,31 @@ def _entetes(accept: str, ajax: bool) -> dict[str, str]:
     return entetes
 
 
-def telecharger(url: str, accept: str = "*/*", ajax: bool = False, pause: bool = True) -> Reponse:
+def telecharger(url: str, accept: str = "*/*", ajax: bool = False, pause: bool = True,
+                cadence: str | None = None) -> Reponse:
     """Télécharge `url`. Réessaie une fois sur erreur réseau ou 5xx.
 
     Lève ErreurVerification avec un message lisible en cas d'échec, et met
     l'hôte en pause s'il signale une limite de débit ou un blocage (sauf
     `pause=False` : limite propre à une API, le reste du site reste joignable).
+    `cadence` (ex. "shopify") fait passer la requête par la file de ce groupe.
     """
     hote = urlsplit(url).hostname or ""
-    restant = PAUSES.restant(hote)
-    if restant > 0:
-        raise ErreurVerification(f"site en pause encore {restant / 60:.0f} min (limite de débit ou blocage)")
+    if PAUSES.restant(hote) > 0:
+        raise ErreurVerification("site en pause (limite de débit ou blocage)")
+    file = CADENCES.get(cadence or "")
 
     derniere: Exception | None = None
     for tentative in range(1, TENTATIVES + 1):
+        if file:
+            file.attendre()
         try:
             requete = Request(url, headers=_entetes(accept, ajax))
             with urlopen(requete, timeout=TIMEOUT_S) as rep:
                 corps = _decompresser(rep.read(), rep.headers.get("Content-Encoding", ""))
                 PAUSES.succes(hote)
+                if file:
+                    file.accelerer()
                 return Reponse(
                     code=rep.status,
                     corps=corps,
@@ -171,11 +214,15 @@ def telecharger(url: str, accept: str = "*/*", ajax: bool = False, pause: bool =
                     type=(rep.headers.get_content_type() or "").lower(),
                 )
         except HTTPError as err:
+            if file and err.code == 429:
+                file.ralentir()
             if err.code in CODES_REESSAI and tentative < TENTATIVES:
                 derniere = err
                 time.sleep(1.5 * tentative)
                 continue
-            if err.code in CODES_PAUSE and pause:
+            # Groupe à cadence (Shopify) : un 429 vient de la limite commune, déjà gérée
+            # en ralentissant la file ; inutile de bloquer cette boutique en plus.
+            if err.code in CODES_PAUSE and pause and not (file and err.code == 429):
                 duree = PAUSES.echec(hote)
                 raise ErreurHTTP(err.code, f"{err.reason} — pause {duree / 60:.0f} min") from err
             raise ErreurHTTP(err.code, str(err.reason)) from err
@@ -190,8 +237,8 @@ def telecharger(url: str, accept: str = "*/*", ajax: bool = False, pause: bool =
     raise ErreurVerification(f"réseau : {raison} — pause {duree / 60:.0f} min")
 
 
-def telecharger_json(url: str, ajax: bool = False, pause: bool = True) -> Any:
-    reponse = telecharger(url, accept=ACCEPT_JSON, ajax=ajax, pause=pause)
+def telecharger_json(url: str, ajax: bool = False, pause: bool = True, cadence: str | None = None) -> Any:
+    reponse = telecharger(url, accept=ACCEPT_JSON, ajax=ajax, pause=pause, cadence=cadence)
     try:
         return reponse.json()
     except ErreurVerification:
