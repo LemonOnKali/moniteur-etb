@@ -9,6 +9,7 @@ from __future__ import annotations
 import html
 import json
 import re
+from typing import Callable
 from urllib.parse import unquote, urlsplit, urlunsplit
 
 from .boutiques import Analyse, Boutique, analyser
@@ -95,23 +96,46 @@ def diagnostiquer_boutique(b: Boutique, collection: Collection, langues: frozens
     return analyse
 
 
-def decouvrir(urls: list[str], collection: Collection, langues: frozenset[str]) -> int:
-    """Teste des boutiques inconnues et propose les lignes à ajouter dans boutiques.json."""
-    proposees = []
+_RE_URL_FICHE = re.compile(r"\.html?$|/products?/|/produits?/|/p/|/dp/|\d{4,}", re.IGNORECASE)
+
+
+def est_fiche(url: str) -> bool:
+    """Adresse d'une fiche produit (et non d'une boutique entière) ?"""
+    return bool(_RE_URL_FICHE.search(urlsplit(url).path))
+
+
+def decouvrir(urls: list[str], collection: Collection, langues: frozenset[str],
+              offre_produit: Callable[[Produit], Offre]) -> int:
+    """Teste des boutiques (ou des fiches) inconnues et propose les lignes à copier.
+
+    Adresse de boutique → boutiques.json ; adresse de fiche → produits.json.
+    """
+    boutiques: list[dict[str, object]] = []
+    fiches: list[dict[str, object]] = []
     for url in urls:
         url = url.strip().rstrip("/")
         if not url.startswith("http"):
             url = "https://" + url
+        if est_fiche(url):
+            slug = re.sub(r"\.html?$|\d{4,}|[-_/]+", " ", urlsplit(url).path.rsplit("/", 1)[-1]).strip()
+            produit = Produit(nom=slug or url, url=url, type="auto", boutique=domaine(url))
+            offre = offre_produit(produit)
+            diagnostiquer_produit(produit, offre)
+            if offre.dispo is not None:
+                fiches.append({"boutique": produit.boutique, "nom": offre.item.nom, "url": url,
+                               "type": produit.type_detecte or offre.source})
+            continue
         b = Boutique(nom=domaine(url), url=url)
         analyse = diagnostiquer_boutique(b, collection, langues, details=True)
         if b.detectee:
             entree: dict[str, object] = {"nom": b.nom, "url": b.url, "plateforme": b.detectee}
             if not analyse.offres:
                 entree["note"] = "aucune fiche 30 ans trouvée lors du test"
-            proposees.append(entree)
-    if proposees:
-        print("À ajouter dans boutiques.json :")
-        print(json.dumps(proposees, ensure_ascii=False, indent=2))
+            boutiques.append(entree)
+    for fichier, lignes in (("boutiques.json", boutiques), ("produits.json", fiches)):
+        if lignes:
+            print(f"À ajouter dans {fichier} :")
+            print(json.dumps(lignes, ensure_ascii=False, indent=2))
     return 0
 
 

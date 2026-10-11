@@ -33,6 +33,7 @@ class Discord:
         self.webhook = webhook
         self.mention = mention
         self.timeout = timeout
+        self.dernier_code = 0  # code HTTP de la dernière réponse de Discord
 
     def poster(self, charge: dict[str, Any]) -> bool:
         """Envoie une charge JSON au webhook. Gère le rate-limit Discord (429)."""
@@ -45,10 +46,12 @@ class Discord:
             try:
                 requete = Request(self.webhook, data=corps, headers=entetes, method="POST")
                 with urlopen(requete, timeout=self.timeout) as reponse:
+                    self.dernier_code = reponse.status
                     if 200 <= reponse.status < 300:
                         return True
                     _log(f"Discord : réponse inattendue HTTP {reponse.status}")
             except HTTPError as err:
+                self.dernier_code = err.code
                 if err.code == 429:
                     attente = 2.0
                     try:
@@ -101,7 +104,13 @@ class Discord:
             }
             if texte:
                 charge["content"] = texte[:2000]
-            resultats += [self.poster(charge)] * len(paquet)
+            ok = self.poster(charge)
+            if not ok and self.dernier_code == 400:
+                # Discord refuse le message (image ou lien invalide) : on renvoie sans image
+                # plutôt que de perdre l'alerte.
+                charge["embeds"] = [{k: v for k, v in e.items() if k not in ("thumbnail", "image")} for e in paquet]
+                ok = self.poster(charge)
+            resultats += [ok] * len(paquet)
         return resultats
 
 
@@ -138,7 +147,7 @@ def embed_offre(offre: Offre, nouvelle: bool) -> dict[str, Any]:
         "footer": {"text": f"{offre.source} · moniteur 30 ans v{VERSION}"},
         "timestamp": _horodatage(),
     }
-    if offre.image:
+    if offre.image and offre.image.startswith(("https://", "http://")) and len(offre.image) < 1500:
         embed["thumbnail"] = {"url": offre.image}
     return embed
 

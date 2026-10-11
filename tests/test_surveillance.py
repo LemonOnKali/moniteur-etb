@@ -111,5 +111,24 @@ class TestDiscordPaquets(unittest.TestCase):
         self.assertEqual(resultats, [True] * 23)
 
 
+class TestDiscordImageRefusee(unittest.TestCase):
+    def test_renvoi_sans_image(self):
+        from moniteur_etb.discord import Discord
+
+        d = Discord("https://discord.test/webhook")
+        envoyes = []
+
+        def poster(charge):
+            envoyes.append(charge)
+            d.dernier_code = 400 if any("thumbnail" in e for e in charge["embeds"]) else 204
+            return d.dernier_code == 204
+
+        with mock.patch.object(Discord, "poster", side_effect=poster):
+            resultats = d.embeds("", [{"title": "ETB", "thumbnail": {"url": "https://x/y.jpg"}}])
+        self.assertEqual(resultats, [True])
+        self.assertEqual(len(envoyes), 2)
+        self.assertNotIn("thumbnail", envoyes[1]["embeds"][0])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -21,7 +21,8 @@ def main(argv: list[str] | None = None) -> int:
     parseur.add_argument("--diagnostic", action="store_true",
                          help="un passage détaillé sans Discord (boutiques et fiches), pour régler chaque site")
     parseur.add_argument("--decouvrir", nargs="+", metavar="URL",
-                         help="teste des boutiques (Shopify, WooCommerce, PrestaShop) et liste leurs fiches 30 ans")
+                         help="teste des boutiques (Shopify, WooCommerce, PrestaShop) ou des fiches produit "
+                              "et propose les lignes à ajouter")
     parseur.add_argument("--liens", metavar="URL", help="liste les liens marchands d'une page (comparateur) et quitte")
     args = parseur.parse_args(argv)
 
@@ -41,7 +42,8 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ValueError) as err:
         sys.exit(f"{reglages.fichier_collection} illisible : {err}")
     if args.decouvrir:
-        return decouvrir(args.decouvrir, collection, reglages.langues)
+        surveillance = Surveillance(reglages, collection, [], [], discord, {})
+        return decouvrir(args.decouvrir, collection, reglages.langues, surveillance.offre_produit)
 
     produits = charger_produits(reglages.fichier_produits)
     boutiques = charger_boutiques(reglages.fichier_boutiques)

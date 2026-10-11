@@ -106,7 +106,9 @@ https://boutique-une.fr https://boutique-deux.com
 ```
 
 Le test détecte la plateforme, liste les fiches 30 ans trouvées et affiche les
-lignes à copier dans `boutiques.json` :
+lignes à copier dans `boutiques.json`. Une adresse de **fiche produit** (Amazon,
+Micromania, JouéClub…) est testée comme une fiche et donne la ligne à copier
+dans `produits.json`.
 
 ```json
 {"nom": "LorenZone", "url": "https://lorenzone.fr", "plateforme": "shopify"}
@@ -187,7 +189,7 @@ ou `python moniteur.py --liens URL`.
 
 ```bash
 python moniteur.py --diagnostic                   # un passage détaillé, sans Discord
-python moniteur.py --decouvrir https://boutique.fr  # tester une nouvelle boutique
+python moniteur.py --decouvrir https://boutique.fr  # tester une boutique (ou une fiche produit)
 python moniteur.py --une-fois                     # un cycle normal
 DISCORD_WEBHOOK=https://discord.com/api/webhooks/... python moniteur.py --test-discord
 python -m unittest discover -s tests              # tests (hors ligne)
