@@ -1,10 +1,13 @@
 name: Tester les boutiques
 
-# Lancement manuel uniquement : un seul passage, sans Discord, avec des
-# extraits de chaque page pour vérifier qu'une boutique est bien détectée.
+# Lancement manuel uniquement : un seul passage, sans Discord.
 # - "ou" : github (serveurs GitHub) ou pc (ton runner auto-hébergé).
+# - "decouvrir" : optionnel, adresses de boutiques à tester (séparées par des
+#   espaces) : plateforme détectée, fiches 30 ans trouvées, lignes à copier
+#   dans boutiques.json.
 # - "page_liens" : optionnel, URL d'une page comparateur (« où acheter ») dont
-#   on veut extraire les liens marchands au lieu de lancer le diagnostic.
+#   on veut extraire les liens marchands.
+# Sans option : diagnostic complet de boutiques.json et produits.json.
 on:
   workflow_dispatch:
     inputs:
@@ -15,6 +18,10 @@ on:
         options:
           - github
           - pc
+      decouvrir:
+        description: "Boutiques à tester, séparées par des espaces (optionnel)"
+        type: string
+        required: false
       page_liens:
         description: "URL d'une page « où acheter » pour en extraire les liens (optionnel)"
         type: string
@@ -25,24 +32,33 @@ permissions:
 
 jobs:
   diagnostic:
-    name: Diagnostic des produits
+    name: Diagnostic
     runs-on: ${{ inputs.ou == 'pc' && 'self-hosted' || 'ubuntu-latest' }}
-    timeout-minutes: 10
+    timeout-minutes: 20
+    env:
+      PYTHONUNBUFFERED: "1"
+      PYTHONIOENCODING: utf-8
+      LANGUES: ${{ vars.LANGUES || 'fr' }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         if: inputs.ou != 'pc'
         with:
           python-version: "3.12"
+      - name: Tester des boutiques
+        if: inputs.decouvrir != ''
+        env:
+          BOUTIQUES: ${{ inputs.decouvrir }}
+        # Découpage volontaire sur les espaces : une adresse par argument.
+        run: python moniteur.py --decouvrir $BOUTIQUES
       - name: Liens marchands de la page
         if: inputs.page_liens != ''
         env:
-          PYTHONIOENCODING: utf-8
-        run: python moniteur.py --liens "${{ inputs.page_liens }}"
-      - name: Diagnostic
-        if: inputs.page_liens == ''
+          PAGE: ${{ inputs.page_liens }}
+        run: python moniteur.py --liens "$PAGE"
+      - name: Diagnostic complet
+        if: inputs.decouvrir == '' && inputs.page_liens == ''
         env:
           FICHIER_PRODUITS: ${{ inputs.ou == 'pc' && 'produits-pc.json' || 'produits.json' }}
-          PYTHONUNBUFFERED: "1"
-          PYTHONIOENCODING: utf-8
+          FICHIER_BOUTIQUES: ${{ inputs.ou == 'pc' && '' || 'boutiques.json' }}
         run: python moniteur.py --diagnostic

@@ -1,125 +1,70 @@
 [
   {
-    "nom": "LorenZone ETB 30 ans",
-    "url": "https://lorenzone.fr/products/etb-30eme-anniversaire",
-    "type": "shopify"
-  },
-  {
-    "nom": "PokeMael ETB 30 ans",
-    "url": "https://pokemael.com/products/pokemon-30th-celebration-elite-trainer-box-coffret-dresseur-delite-en",
-    "type": "shopify"
-  },
-  {
-    "nom": "Collect Avenue ETB 30 ans",
-    "url": "https://collect-avenue.com/products/pokemon-coffret-dresseur-delite-etb-30e-anniversaire-version-francaise-precommande",
-    "type": "shopify"
-  },
-  {
-    "nom": "Ecardstore ETB 30 ans",
-    "url": "https://ecardstore.fr/product/etb-pokemon-coffret-dresseur-delite-30e-anniversaire-fr/",
-    "type": "woocommerce"
-  },
-  {
-    "nom": "PixelHeart ETB 30 ans",
-    "url": "https://www.pixelheart.eu/fr/produit/30th-anniversaire-pokemon-etb-version-francaise/",
-    "type": "woocommerce"
-  },
-  {
-    "nom": "Pokezenith ETB 30 ans",
-    "url": "https://www.pokezenith.com/me055-30e-anniversaire/459-pokemon-coffret-dresseur-d-elite-etb-me055-30e-anniversaire-196214144835.html",
-    "type": "prestashop"
-  },
-  {
-    "nom": "Foxchip ETB 30 ans",
-    "url": "https://www.foxchip-collector.com/fr/coffrets-dresseur-d-elite-etb/81311-coffret-dresseur-d-elite-pokemon-30e-anniversaire-0196214144835.html",
-    "type": "prestashop"
-  },
-  {
-    "nom": "Les Gentlemen du Jeu ETB 30 ans",
-    "url": "https://lesgentlemendujeu.com/pokemon-30-ans-30eme-anniversaire/12617-pokemon-30-ans-coffret-dresseur-d-elite-etb-30eme-anniversaire-0196214144835.html",
-    "type": "prestashop"
-  },
-  {
-    "nom": "BCD Jeux ETB 30 ans",
-    "url": "https://www.bcd-jeux.fr/pokemon-tcg/39006-pokemon-anniversaire-30-ans-coffret-etb-dresseur-d-elite-pokemon.html",
-    "type": "prestashop"
-  },
-  {
-    "nom": "Pokesumo ETB 30 ans",
-    "url": "https://pokesumo.com/pokemon-jcc/15513-coffret-dresseur-d-elite-30-anniversaire-etb.html",
-    "type": "prestashop"
-  },
-  {
-    "nom": "Ludocortex ETB 30 ans",
-    "url": "https://www.ludocortex.fr/pokemon-tcg/18606-pokemon-30-ans-coffret-dresseur-d-elite.html",
-    "type": "prestashop"
-  },
-  {
-    "nom": "Philibert ETB 30 ans",
-    "url": "https://www.philibertnet.com/fr/pokemon/181759-pokemon-30-ans-coffret-dresseur-d-elite-2100001405977.html",
-    "type": "texte",
-    "note": "Philibert redirige la fiche vers la catégorie tant que le produit est retiré : erreur normale."
-  },
-  {
-    "nom": "UltraJeux ETB 30 ans",
+    "boutique": "UltraJeux",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
     "url": "https://www.ultrajeux.com/produit-32960-etb-coffret-dresseur-d-elite-pokemon-30e-anniversaire-0196214144835.html",
     "type": "texte"
   },
   {
-    "nom": "Au Dé Mon du Jeu ETB 30 ans",
+    "boutique": "Au Dé Mon du Jeu",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
     "url": "https://www.audemondujeu.com/article,pokemon-30ans-coffret-dresseur-d-elite-30eme-anniversaire-8-12-12690.html",
     "type": "texte",
     "regex_rupture": "class=\"dispoFiche\"[^>]*>\\s*RUPTURE"
   },
   {
-    "nom": "Smartoys (Belgique) ETB 30 ans",
-    "url": "https://www.smartoys.be/catalog/trading-cards-pokemon-pokemon-jcc-coffret-dresseur-delite-30e-anniversaire-p-0196214144835.html",
-    "type": "texte",
-    "regex_rupture": "non disponible online"
-  },
-  {
-    "nom": "Poke-Geek ETB 30 ans",
-    "url": "https://www.poke-geek.fr/products/coffret-dresseur-d-elite-pokemon-30e-anniversaire-francais",
-    "type": "shopify"
-  },
-  {
-    "nom": "Hikaru Distribution ETB 30 ans",
-    "url": "https://hikarudistribution.com/products/elite-trainer-box-30th-celebration-francais",
-    "type": "shopify"
-  },
-  {
-    "nom": "Outpost Brussels (Belgique) ETB 30 ans",
-    "url": "https://outpostbrussels.be/products/pokemon-30e-anniversaire-coffret-dresseur-delite-fr-s",
-    "type": "shopify"
-  },
-  {
-    "nom": "Plaza TCG ETB 30 ans",
-    "url": "https://plazatcg.com/etb/2184-pokemon-etb-coffret-dresseur-d-elite-30e-anniversaire-francais-196214144835.html",
-    "type": "auto"
-  },
-  {
-    "nom": "Fantastik ETB 30 ans",
-    "url": "https://fantastik.fr/33093-prochainement-pokemon-coffret-dresseur-d-elite-celebration-30-ans.html",
-    "type": "auto"
-  },
-  {
-    "nom": "Guizette Family ETB 30 ans",
-    "url": "https://www.guizettefamily.com/produit/etb-30-ans-pokemon/",
-    "type": "auto"
-  },
-  {
-    "nom": "1001hobbies ETB 30 ans",
-    "url": "https://www.1001hobbies.fr/jeux-de-cartes-a-jouer/892561-pokemon-company-bm-258861-pokemon-30eme-anniversaire-elite-trainer-196214144835.html",
-    "type": "auto"
-  },
-  {
-    "nom": "JouéClub ETB 30 ans",
+    "boutique": "JouéClub",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
     "url": "https://www.joueclub.fr/pokemon/pokemon-30eme-anniversaire-coffret-dresseur-d-elite-0196214144835.html",
     "type": "texte"
   },
   {
-    "nom": "La Grande Récré ETB 30 ans",
-    "url": "https://www.lagranderecre.fr/jeux-de-societe/cartes-a-collectionner/coffret-dresseur-d-elite-pokemon-30e-anniversaire.html",
+    "boutique": "Micromania",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
+    "url": "https://www.micromania.fr/p/coffret-dresseur-d-elite-pokemon-30-ans-162654.html",
     "type": "texte"
+  },
+  {
+    "boutique": "Dstrib",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
+    "url": "https://www.dstrib.com/produit-8296-etb-coffret-dresseur-d-elite-30e-anniversaire-franneais.html",
+    "type": "texte"
+  },
+  {
+    "boutique": "MediaMarkt (BE)",
+    "nom": "Bundle 6 boosters 30 ans",
+    "url": "https://www.mediamarkt.be/fr/product/_30th-anniversary-6-bo-bundle-cartes-pokemon-2251005.html",
+    "type": "texte"
+  },
+  {
+    "boutique": "MediaMarkt (BE)",
+    "nom": "Mini Tin 30 ans",
+    "url": "https://www.mediamarkt.be/fr/product/_pokemon-30th-anniversary-mini-tin-pokemon-cards-pokemon-cards-2251004.html",
+    "type": "texte"
+  },
+  {
+    "boutique": "Philibert",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
+    "url": "https://www.philibertnet.com/fr/pokemon/181759-pokemon-30-ans-coffret-dresseur-d-elite-2100001405977.html",
+    "type": "texte",
+    "actif": false,
+    "note": "Philibert répond 403 aux serveurs GitHub. À tester depuis le PC."
+  },
+  {
+    "boutique": "La Grande Récré",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
+    "url": "https://www.lagranderecre.fr/jeux-de-societe/cartes-a-collectionner/coffret-dresseur-d-elite-pokemon-30e-anniversaire.html",
+    "type": "texte",
+    "actif": false,
+    "note": "Fiche retirée (redirige vers la catégorie). Remettre l'URL quand elle revient."
+  },
+  {
+    "boutique": "Smartoys (BE)",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
+    "url": "https://www.smartoys.be/catalog/trading-cards-pokemon-pokemon-jcc-coffret-dresseur-delite-30e-anniversaire-p-0196214144835.html",
+    "type": "texte",
+    "regex_rupture": "non disponible online",
+    "actif": false,
+    "note": "Fiche retirée (HTTP 410)."
   }
 ]

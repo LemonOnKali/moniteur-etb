@@ -19,21 +19,21 @@ permissions:
 
 jobs:
   moniteur:
-    name: Surveillance des produits
+    name: Surveillance des boutiques
     runs-on: ubuntu-latest
     timeout-minutes: 360
 
     steps:
       - name: Récupérer le dépôt
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Installer Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
       # L'état (dispo/prix) est conservé entre deux exécutions pour n'alerter
-      # qu'au passage en stock, jamais deux fois pour le même produit.
+      # qu'au passage en stock, jamais deux fois pour la même fiche.
       - name: Restaurer l'état précédent
         uses: actions/cache/restore@v4
         with:
@@ -46,12 +46,16 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           DISCORD_MENTION: ${{ vars.DISCORD_MENTION }}
-          # Pas d'alerte au-dessus de ce prix (spéculateurs). Variable de dépôt
-          # PRIX_MAX pour changer, 100 € par défaut.
-          PRIX_MAX: ${{ vars.PRIX_MAX || '100' }}
-          # Durée d'une exécution (minutes) et délai entre deux vérifications (s).
+          # Plafond des produits sans plafond dans collection.json (les plafonds
+          # par produit — ETB, UPC… — se règlent dans collection.json).
+          PRIX_MAX: ${{ vars.PRIX_MAX }}
+          # Langues de cartes acceptées : "fr" (défaut) ou "fr,en".
+          LANGUES: ${{ vars.LANGUES || 'fr' }}
+          # Durée d'une exécution (min), délai entre deux vérifications (s) et
+          # entre deux recherches de nouvelles fiches dans les boutiques (min).
           DUREE_MINUTES: ${{ vars.DUREE_MINUTES || '350' }}
-          INTERVALLE_SECONDES: ${{ vars.INTERVALLE_SECONDES || '60' }}
+          INTERVALLE_SECONDES: ${{ vars.INTERVALLE_SECONDES || '30' }}
+          DECOUVERTE_MINUTES: ${{ vars.DECOUVERTE_MINUTES || '15' }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           PYTHONUNBUFFERED: "1"
         run: python moniteur.py
