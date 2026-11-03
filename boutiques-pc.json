@@ -1,0 +1,3 @@
+[
+  {"nom": "Carrefour", "url": "https://www.carrefour.fr", "plateforme": "html", "recherche_url": "https://www.carrefour.fr/s?q={q}", "motif_fiche": "/p/[^/]+-\\d{8,14}$", "recherches": ["pokemon 30e anniversaire", "pokemon ultra premium 30"], "note": "Carrefour bloque les serveurs GitHub : surveillé depuis le PC."}
+]

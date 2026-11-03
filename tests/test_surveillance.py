@@ -100,7 +100,7 @@ class TestCycle(unittest.TestCase):
 
 class TestRythme(unittest.TestCase):
     def test_boutique_lue_fiche_par_fiche_menagee(self):
-        b = Boutique(nom="Presta", url="https://p.fr", presta_html=True)
+        b = Boutique(nom="Presta", url="https://p.fr", fiche_par_fiche=True)
         self.assertTrue(b.verification_due())
         b.derniere_verification = time.monotonic()
         self.assertFalse(b.verification_due())

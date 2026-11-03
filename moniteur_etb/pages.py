@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
-from .http import ErreurVerification, telecharger_json, telecharger_page
+from .http import ErreurVerification, en_pause, telecharger_json, telecharger_page
 from .modeles import Resultat
 from .texte import lire_prix, normaliser, texte_visible
 
@@ -366,6 +366,15 @@ def image_og(page_html: str) -> str | None:
     return lien if lien.startswith("http") else None
 
 
+def titre_page(page_html: str) -> str | None:
+    """Titre de la fiche : og:title, sinon <title>."""
+    m = _RE_OG_TITRE.search(page_html) or _RE_TITRE.search(page_html)
+    if not m:
+        return None
+    titre = " ".join(html.unescape(re.sub(r"<[^>]+>", " ", m.group(1))).split())
+    return titre or None
+
+
 def extraire_prix(page_html: str) -> float | None:
     for motif in (_RE_PRIX_META, _RE_PRIX_JSONLD, _RE_PRIX_AUTRES):
         m = motif.search(page_html)
@@ -420,9 +429,10 @@ def lire_page_texte(produit: Produit, page: str) -> Resultat:
         raise ErreurVerification(raison)
     prix = extraire_prix(page)
     image = image_og(page)
+    titre = titre_page(page)
 
     def resultat(dispo: bool, detail: str) -> Resultat:
-        return Resultat(dispo=dispo, prix=prix, detail=detail, source="texte", image=image)
+        return Resultat(dispo=dispo, prix=prix, detail=detail, source="texte", image=image, titre=titre)
 
     # Expressions régulières sur le HTML brut (pages JavaScript, marqueurs CSS…).
     if produit.regex_stock:
@@ -467,9 +477,26 @@ def lire_page_texte(produit: Produit, page: str) -> Resultat:
     return resultat(True, "aucun mot de rupture")
 
 
+def ordre_auto(url: str) -> list[str]:
+    """Types à essayer, le plus probable d'après l'adresse en premier.
+
+    Une grande enseigne (Leclerc, Auchan…) ne doit pas recevoir de requêtes
+    d'API Shopify ou WooCommerce inutiles : son anti-robot bloquerait ensuite la
+    vraie fiche. Sans indice dans l'adresse, la lecture « texte » passe en tête.
+    """
+    chemin = urlsplit(url).path
+    if "/products/" in chemin:
+        return ["shopify", "texte"]
+    if re.search(r"/(produit|product)/", chemin):
+        return ["woocommerce", "texte"]
+    if re.search(r"/\d+-[^/]+\.html$", chemin):
+        return ["prestashop", "texte"]
+    return ["texte", "prestashop"]
+
+
 def verifier_auto(produit: Produit) -> Resultat:
     """Détecte le type de boutique une fois, puis le réutilise pour les cycles suivants."""
-    ordre = [produit.type_detecte] if produit.type_detecte else ["shopify", "woocommerce", "prestashop", "texte"]
+    ordre = [produit.type_detecte] if produit.type_detecte else ordre_auto(produit.url)
     erreurs: list[str] = []
     for candidat in ordre:
         try:
@@ -478,6 +505,8 @@ def verifier_auto(produit: Produit) -> Resultat:
             return resultat
         except ErreurVerification as err:
             erreurs.append(f"{candidat} : {err}")
+            if en_pause(produit.url):
+                break
     raise ErreurVerification(" | ".join(erreurs))
 
 

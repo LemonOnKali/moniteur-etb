@@ -80,8 +80,8 @@ def diagnostiquer_boutique(b: Boutique, collection: Collection, langues: frozens
     ]
     if b.categories_trouvees:
         lignes.append(f"    catégories 30 ans : {', '.join(b.categories_trouvees)}")
-    if b.presta_html:
-        lignes.append("    PrestaShop sans recherche JSON : fiches lues une à une")
+    if b.fiche_par_fiche:
+        lignes.append("    fiches lues une à une (vérification toutes les 2 min)")
     for note in ([b.note] if b.note else []) + analyse.notes:
         lignes.append(f"    note : {note}")
     for erreur in analyse.erreurs:
