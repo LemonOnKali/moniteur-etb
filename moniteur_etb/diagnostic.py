@@ -12,7 +12,7 @@ import re
 from typing import Callable
 from urllib.parse import unquote, urlsplit, urlunsplit
 
-from .boutiques import Analyse, Boutique, analyser
+from .boutiques import Analyse, Boutique, analyser, liens_fiches
 from .collection import Collection
 from .http import ErreurVerification, telecharger, telecharger_page
 from .modeles import Offre
@@ -270,4 +270,17 @@ def lister_liens(url: str) -> int:
     if not vus:
         hotes = sorted({urlsplit(html.unescape(m.group(1))).netloc for m in re.finditer(r'href\s*=\s*["\'](https?://[^"\'#]+)', page, re.IGNORECASE)})
         print("  aucun. Domaines liés depuis la page : " + ", ".join(hotes[:40]))
+    # Fiches du site lui-même (page de recherche ou de catégorie d'une enseigne) :
+    # de quoi écrire le « motif_fiche » d'une boutique html.
+    fiches = liens_fiches(page, url, _RE_FICHE_PROBABLE)
+    print(f"{len(fiches)} fiche(s) probable(s) du site sur la page :")
+    for f in fiches[:40]:
+        print(f"  {urlsplit(f.url).path}   « {f.titre[:80]} »")
+    if not fiches:
+        texte = texte_visible(page)
+        print(f"  aucune. Page de {len(page)} caractères, texte visible {len(texte)} : {texte[:300]!r}")
     return 0
+
+
+# Adresse qui ressemble à une fiche : long identifiant numérique, ou /p/, /fp/, /pr-, /products/…
+_RE_FICHE_PROBABLE = re.compile(r"\d{6,}|/(p|fp|products?|produits?|dp)/|/pr-|/ref-", re.IGNORECASE)

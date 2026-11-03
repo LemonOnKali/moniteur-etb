@@ -58,8 +58,9 @@ Boutiques couvertes aujourd'hui (≈ 250 fiches 30 ans suivies) :
 | Shopify (catalogue entier) | LorenZone, PokeMael, Collect Avenue, Poke-Geek, Hikaru Distribution, Outpost Brussels, TradingCards XXX, VCollect, Cartes-Pokemon.com |
 | WooCommerce (catalogue entier) | Ecardstore, PixelHeart, Guizette Family, GoRetroGaming, PokeShop.cards |
 | PrestaShop (catalogue entier) | Pokezenith, Foxchip, BCD Jeux, Pokesumo, 1001hobbies, Fantastik, Le Monde Imaginaire, Pokémon Carte, Espace Kids |
-| Fiches (`produits.json`) | UltraJeux, Au Dé Mon du Jeu, JouéClub, Micromania, Dstrib, Ludocortex, Plaza TCG, Les Gentlemen du Jeu, Blazing Tail |
-| Depuis le PC (`produits-pc.json`) | Amazon, Carrefour, Courses U, MediaMarkt |
+| Grandes enseignes (recherche puis fiche par fiche) | E.Leclerc, Auchan, JouéClub, Micromania |
+| Fiches (`produits.json`) | UltraJeux, Au Dé Mon du Jeu, JouéClub, Micromania, Dstrib, Ludocortex, Plaza TCG, Les Gentlemen du Jeu, Blazing Tail, UPC Leclerc |
+| Depuis le PC (`boutiques-pc.json`, `produits-pc.json`) | Carrefour, King Jouet, Cultura (recherche), Amazon (ETB, UPC, Mini Tins), Courses U, MediaMarkt, UPC Carrefour |
 
 Hors de portée sans vrai navigateur : Fnac, Cdiscount, Smyths (anti-robot),
 Play-in (stock chargé en JavaScript), Pokémon Center.
@@ -145,6 +146,7 @@ dans `produits.json`.
 | `recherches` | Termes de recherche propres à cette boutique (défaut : ceux de `collection.json`). |
 | `prix_max` | Plafond pour toute la boutique (remplace ceux de `collection.json`). |
 | `intervalle_secondes` | Délai minimal entre deux vérifications de cette boutique (défaut : chaque cycle ; 120 s pour une boutique lue fiche par fiche). |
+| `recherche_url`, `pages`, `motif_fiche` | Plateforme `html` (grandes enseignes) : page de recherche avec `{q}` pour le terme, pages à parcourir (catégorie « 30 ans »), et expression des adresses de fiche. Voir les exemples Leclerc, Auchan, JouéClub, Micromania dans `boutiques.json`. |
 | `actif` | `false` pour mettre la boutique en pause. |
 
 **Autre site** : ajoute la fiche dans `produits.json` :
@@ -162,6 +164,7 @@ dans `produits.json`.
 |---|---|
 | `boutique`, `nom`, `url` | Boutique et nom affichés, adresse de la fiche. Le nom sert à classer le produit (ETB, UPC…). |
 | `item` | Force le produit (`etb`, `bundle`, `upc-journee`… voir `collection.json`). |
+| `a_venir` | `true` pour un produit annoncé dont la fiche n'est pas encore en ligne : un 404 compte comme « pas encore en ligne » au lieu d'une erreur, et l'alerte part dès que la fiche apparaît en stock. Chez Leclerc et Carrefour, l'adresse se construit avec le code-barres (EAN). |
 | `type` | `shopify`, `woocommerce`, `prestashop`, `texte` ou `auto` (défaut). |
 | `mots_rupture` / `mots_stock` | Type `texte` : rupture si un mot de rupture apparaît / en stock si un mot de stock apparaît. |
 | `regex_rupture` / `regex_stock` | Type `texte` : expression régulière sur le HTML brut. |

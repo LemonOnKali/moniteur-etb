@@ -13,18 +13,6 @@
     "regex_rupture": "class=\"dispoFiche\"[^>]*>\\s*RUPTURE"
   },
   {
-    "boutique": "JouéClub",
-    "nom": "Coffret Dresseur d'Élite 30 ans",
-    "url": "https://www.joueclub.fr/pokemon/pokemon-30eme-anniversaire-coffret-dresseur-d-elite-0196214144835.html",
-    "type": "texte"
-  },
-  {
-    "boutique": "Micromania",
-    "nom": "Coffret Dresseur d'Élite 30 ans",
-    "url": "https://www.micromania.fr/p/coffret-dresseur-d-elite-pokemon-30-ans-162654.html",
-    "type": "texte"
-  },
-  {
     "boutique": "Dstrib",
     "nom": "Coffret Dresseur d'Élite 30 ans",
     "url": "https://www.dstrib.com/produit-8296-etb-coffret-dresseur-d-elite-30e-anniversaire-franneais.html",
@@ -82,6 +70,22 @@
     "type": "texte",
     "a_venir": true,
     "note": "Leclerc retrouve la fiche par son code-barres (EAN) : l'adresse marchera dès sa mise en ligne."
+  },
+  {
+    "boutique": "JouéClub",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
+    "url": "https://www.joueclub.fr/pokemon/pokemon-30eme-anniversaire-coffret-dresseur-d-elite-0196214144835.html",
+    "type": "texte",
+    "actif": false,
+    "note": "Fiche retirée (redirige vers la page Pokémon). La page « 30 ans » de JouéClub (boutiques.json) repère toute nouvelle fiche."
+  },
+  {
+    "boutique": "Micromania",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
+    "url": "https://www.micromania.fr/p/coffret-dresseur-d-elite-pokemon-30-ans-162654.html",
+    "type": "texte",
+    "actif": false,
+    "note": "Couvert par la boutique html Micromania (boutiques.json) : inutile de le lire deux fois."
   },
   {
     "boutique": "Philibert",

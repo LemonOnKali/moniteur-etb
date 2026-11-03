@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
-from .http import ErreurHTTP, ErreurVerification, en_pause, telecharger_json, telecharger_page
+from .http import PAUSES, ErreurHTTP, ErreurVerification, en_pause, telecharger_json, telecharger_page
 from .modeles import Resultat
 from .texte import lire_prix, normaliser, texte_visible
 
@@ -428,7 +428,9 @@ def lire_page_texte(produit: Produit, page: str) -> Resultat:
     texte = texte_visible(page)
     raison = page_anti_robot(page, texte)
     if raison:
-        raise ErreurVerification(raison)
+        # Page de défi anti-robot : on laisse le site tranquille un moment.
+        duree = PAUSES.echec(urlsplit(produit.url).hostname or "")
+        raise ErreurVerification(f"{raison} — pause {duree / 60:.0f} min")
     prix = extraire_prix(page)
     image = image_og(page)
     titre = titre_page(page)
