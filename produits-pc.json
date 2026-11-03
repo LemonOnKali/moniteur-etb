@@ -88,37 +88,140 @@
     ]
   },
   {
+    "boutique": "Carrefour",
+    "nom": "Collection Ultra-Premium Journée (Mentali) 30 ans",
+    "item": "upc-journee",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-collection-ultra-premium-journee-mentali-30e-anniversaire-pokemon-0196214155336",
+    "type": "texte",
+    "intervalle_secondes": 120,
+    "a_venir": true,
+    "note": "Lu via schema.org. Carrefour bloque GitHub : depuis le PC. Adresses sans nom exact construites avec l'EAN (a_venir) ; la recherche Carrefour (boutiques-pc.json) prend le relais."
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Collection Ultra-Premium Soirée (Noctali) 30 ans",
+    "item": "upc-soiree",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-collection-ultra-premium-soiree-noctali-30e-anniversaire-pokemon-0196214155398",
+    "type": "texte",
+    "intervalle_secondes": 120,
+    "a_venir": true
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
+    "item": "etb",
+    "url": "https://www.carrefour.fr/p/cartes-a-jouer-et-a-collectionner-coffret-dresseur-d-elite-30e-anniversaire-pokemon-0196214144835",
+    "type": "texte",
+    "intervalle_secondes": 120
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Collection Premium Métamorph 30 ans",
+    "item": "metamorph-premium",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-coffret-premium-8-boosters-30e-anniversaire-pokemon-0196214147430",
+    "type": "texte",
+    "intervalle_secondes": 120,
+    "a_venir": true
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Bundle 6 boosters 30 ans",
+    "item": "bundle",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-bundle-6-boosters-30e-anniversaire-pokemon-0196214145221",
+    "type": "texte",
+    "intervalle_secondes": 120,
+    "a_venir": true
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Coffret Nymphali-ex 30 ans",
+    "item": "coffret-ex",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-nymphali-ex-30e-anniversaire-pokemon-0196214147102",
+    "type": "texte",
+    "intervalle_secondes": 120
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Coffret Amphinobi-ex 30 ans",
+    "item": "coffret-ex",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-amphinobi-ex-30e-anniversaire-pokemon-0196214147164",
+    "type": "texte",
+    "intervalle_secondes": 120
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Pokébox 30 ans",
+    "item": "pokebox",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-pokebox-30e-anniversaire-pokemon-0196214146907",
+    "type": "texte",
+    "intervalle_secondes": 120,
+    "a_venir": true
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Pokébox Nymphali-ex 30 ans",
+    "item": "pokebox",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-pokebox-nymphali-ex-30e-anniversaire-pokemon-0196214146976",
+    "type": "texte",
+    "intervalle_secondes": 120,
+    "a_venir": true
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Collection Poster 30 ans",
+    "item": "poster",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-collection-poster-30e-anniversaire-pokemon-0196214147225",
+    "type": "texte",
+    "intervalle_secondes": 120
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Collection Classeur 30 ans",
+    "item": "classeur",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-collection-classeur-30e-anniversaire-pokemon-0196214145153",
+    "type": "texte",
+    "intervalle_secondes": 120
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Mini Tin 30 ans",
+    "item": "mini-tin",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-mini-tin-modele-aleatoire-30e-anniversaire-pokemon-0196214146297",
+    "type": "texte",
+    "intervalle_secondes": 120,
+    "a_venir": true
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Collection Autocollants (Tripack) 30 ans",
+    "item": "autocollants",
+    "url": "https://www.carrefour.fr/p/tripack-pokemon-collection-autocollant-reajustable-30th-celebration-0196214144972",
+    "type": "texte",
+    "intervalle_secondes": 120
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Duopack Évoli 30 ans",
+    "item": "duopack",
+    "url": "https://www.carrefour.fr/p/pack-de-2-boosters-pokemon-30e-anniversaire-pokemon-0196214152311",
+    "type": "texte",
+    "intervalle_secondes": 120
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Coffret Journée Pokémon 2026 (30 ans)",
+    "item": "pokemon-day",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-pikachu-3-boosters-collection-journee-pokemon-2026-cartes-a-collectionner-francaise-3667036159231",
+    "type": "texte",
+    "intervalle_secondes": 120
+  },
+  {
     "boutique": "Fnac",
     "nom": "Coffret Dresseur d'Élite 30 ans",
     "url": "https://www.fnac.com/Cartes-a-collectionner-Pokemon-30A-Coffret-Dresseur-d-Elite/a23200296/w-4",
     "type": "texte",
     "actif": false,
     "note": "Fnac (Datadome) répond 403 même depuis une box : il faut un vrai navigateur. Garde l'alerte « M'alerter » de Fnac."
-  },
-  {
-    "boutique": "Carrefour",
-    "nom": "Coffret Dresseur d'Élite 30 ans",
-    "url": "https://www.carrefour.fr/p/cartes-a-jouer-et-a-collectionner-coffret-dresseur-d-elite-30e-anniversaire-pokemon-0196214144835",
-    "type": "texte",
-    "note": "Lu via schema.org (OutOfStock / InStock). Fonctionne depuis une box, pas depuis GitHub."
-  },
-  {
-    "boutique": "Carrefour",
-    "nom": "Collection Ultra-Premium Journée (Mentali) 30 ans",
-    "item": "upc-journee",
-    "url": "https://www.carrefour.fr/p/coffret-pokemon-collection-ultra-premium-30e-anniversaire-mentali-pokemon-0196214155336",
-    "type": "texte",
-    "a_venir": true,
-    "note": "Adresse construite avec l'EAN : la recherche Carrefour (boutiques-pc.json) prend le relais si elle diffère."
-  },
-  {
-    "boutique": "Carrefour",
-    "nom": "Collection Ultra-Premium Soirée (Noctali) 30 ans",
-    "item": "upc-soiree",
-    "url": "https://www.carrefour.fr/p/coffret-pokemon-collection-ultra-premium-30e-anniversaire-noctali-pokemon-0196214155398",
-    "type": "texte",
-    "a_venir": true,
-    "note": "Adresse construite avec l'EAN : la recherche Carrefour (boutiques-pc.json) prend le relais si elle diffère."
   },
   {
     "boutique": "Smyths Toys",

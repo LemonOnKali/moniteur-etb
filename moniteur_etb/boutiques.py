@@ -314,6 +314,7 @@ def _woo_requete(b: Boutique, parametres: str) -> list[Fiche]:
 _RE_LIEN = re.compile(r"<a\b([^>]*)>(.*?)</a>", re.IGNORECASE | re.DOTALL)
 _RE_HREF = re.compile(r'href\s*=\s*["\']([^"\']+)["\']', re.IGNORECASE)
 _RE_TITLE = re.compile(r'title\s*=\s*["\']([^"\']+)["\']', re.IGNORECASE)
+_RE_PARASITES = re.compile(r"Pipe\.(?:start|end)\(\d+\)")  # marqueurs de gabarit laissés dans les tuiles Auchan
 _RE_URL_FICHE_PRESTA = re.compile(r"/\d+-[^/?#]+\.html(?:[?#]|$)")  # …/12617-nom-du-produit.html
 
 
@@ -382,7 +383,7 @@ def liens_fiches(page: str, racine: str, motif: re.Pattern[str]) -> list[Fiche]:
         lien = lien.split("#")[0].split("?")[0]
         if not motif.search(urlsplit(lien).path):
             continue
-        texte = html.unescape(re.sub(r"<[^>]+>", " ", contenu))
+        texte = _RE_PARASITES.sub(" ", html.unescape(re.sub(r"<[^>]+>", " ", contenu)))
         title = _RE_TITLE.search(attributs)
         texte = " ".join((texte if texte.strip() else html.unescape(title.group(1)) if title else "").split())
         if len(texte) > len(titres.get(lien, "")):
@@ -395,7 +396,7 @@ def liens_fiches(page: str, racine: str, motif: re.Pattern[str]) -> list[Fiche]:
 
 def _html_page(b: Boutique, url: str) -> list[Fiche]:
     """Plateforme html : page de recherche ou de catégorie d'une enseigne."""
-    page = telecharger(url, accept=ACCEPT_HTML).texte()
+    page = telecharger(url, accept=ACCEPT_HTML, cadence="hote").texte()
     assert b.motif_fiche is not None
     fiches = liens_fiches(page, b.racine, b.motif_fiche)
     if not fiches:

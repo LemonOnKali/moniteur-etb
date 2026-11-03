@@ -10,6 +10,7 @@ from __future__ import annotations
 import html
 import json
 import re
+import time
 from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
@@ -45,6 +46,8 @@ class Produit:
     mots_explicites: bool = False  # mots_rupture / mots_stock fournis dans produits.json
     actif: bool = True
     a_venir: bool = False  # fiche pas encore en ligne (404) : « pas encore en ligne », pas une erreur
+    intervalle: float | None = None  # secondes entre deux lectures (grandes enseignes à ménager)
+    derniere_verification: float | None = None
     type_detecte: str | None = None  # renseigné en mode "auto"
 
     @classmethod
@@ -75,11 +78,12 @@ class Produit:
                 except re.error as err:
                     raise ValueError(f"produit '{nom}' : '{nom_champ}' invalide ({err})")
         prix_max = brut.get("prix_max")
-        if prix_max is not None:
-            try:
-                prix_max = float(prix_max)
-            except (TypeError, ValueError):
-                raise ValueError(f"produit '{nom}' : 'prix_max' doit être un nombre")
+        intervalle = brut.get("intervalle_secondes")
+        try:
+            prix_max = float(prix_max) if prix_max is not None else None
+            intervalle = float(intervalle) if intervalle is not None else None
+        except (TypeError, ValueError):
+            raise ValueError(f"produit '{nom}' : 'prix_max' et 'intervalle_secondes' doivent être des nombres") from None
         variante = brut.get("variante")
         return cls(
             nom=nom,
@@ -96,7 +100,13 @@ class Produit:
             mots_explicites=bool(brut.get("mots_rupture") or brut.get("mots_stock")),
             actif=bool(brut.get("actif", True)),
             a_venir=bool(brut.get("a_venir", False)),
+            intervalle=intervalle,
         )
+
+    def verification_due(self) -> bool:
+        if not self.intervalle or self.derniere_verification is None:
+            return True
+        return time.monotonic() - self.derniere_verification >= self.intervalle - 1
 
 
 def domaine(url: str) -> str:

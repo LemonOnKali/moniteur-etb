@@ -170,6 +170,9 @@ class Surveillance:
                 continue
             futurs[executeur.submit(analyser, b, self.collection, self.reglages.langues, decouvrir)] = b
         for p in self.produits:
+            if not p.verification_due():
+                continue
+            p.derniere_verification = time.monotonic()
             futurs[executeur.submit(self.offre_produit, p)] = p
 
         offres: dict[str, Offre] = {}

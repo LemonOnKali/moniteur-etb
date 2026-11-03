@@ -135,6 +135,19 @@ class Cadence:
 
 
 CADENCES = {"shopify": Cadence(intervalle=1.5, minimum=1.2, maximum=8.0)}
+ECART_PAGES_S = 2.0  # pages HTML d'un même site : une toutes les 2 s au plus (grandes enseignes)
+_CADENCES_HOTES: dict[str, Cadence] = {}
+_VERROU_HOTES = threading.Lock()
+
+
+def _file(cadence: str | None, hote: str) -> Cadence | None:
+    """File d'attente d'un groupe (« shopify ») ou propre au site (« hote »)."""
+    if cadence != "hote":
+        return CADENCES.get(cadence or "")
+    with _VERROU_HOTES:
+        if hote not in _CADENCES_HOTES:
+            _CADENCES_HOTES[hote] = Cadence(intervalle=ECART_PAGES_S, minimum=ECART_PAGES_S, maximum=10.0)
+        return _CADENCES_HOTES[hote]
 
 
 def en_pause(url: str) -> bool:
@@ -188,12 +201,13 @@ def telecharger(url: str, accept: str = "*/*", ajax: bool = False, pause: bool =
     Lève ErreurVerification avec un message lisible en cas d'échec, et met
     l'hôte en pause s'il signale une limite de débit ou un blocage (sauf
     `pause=False` : limite propre à une API, le reste du site reste joignable).
-    `cadence` (ex. "shopify") fait passer la requête par la file de ce groupe.
+    `cadence` : "shopify" fait passer la requête par la file commune Shopify,
+    "hote" par celle du site (pages HTML des grandes enseignes).
     """
     hote = urlsplit(url).hostname or ""
     if PAUSES.restant(hote) > 0:
         raise ErreurVerification("site en pause (limite de débit ou blocage)")
-    file = CADENCES.get(cadence or "")
+    file = _file(cadence, hote)
 
     derniere: Exception | None = None
     for tentative in range(1, TENTATIVES + 1):
@@ -247,8 +261,12 @@ def telecharger_json(url: str, ajax: bool = False, pause: bool = True, cadence: 
 
 def telecharger_page(url: str) -> str:
     """Télécharge une page HTML. Lève une erreur si le site redirige vers une autre
-    fiche (produit retiré → page catégorie, par exemple)."""
-    reponse = telecharger(url, accept=ACCEPT_HTML)
+    fiche (produit retiré → page catégorie, par exemple).
+
+    Les pages d'un même site passent à la file (ECART_PAGES_S) : vingt fiches
+    Leclerc ne partent pas en rafale, ce qui déclencherait l'anti-robot.
+    """
+    reponse = telecharger(url, accept=ACCEPT_HTML, cadence="hote")
     if redirection_suspecte(url, reponse.url):
         raise ErreurVerification(f"redirigé vers {reponse.url} (fiche retirée ?)")
     return reponse.texte()

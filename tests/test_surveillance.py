@@ -128,6 +128,17 @@ class TestCadence(unittest.TestCase):
         dormir.assert_called_once()  # la 2e requête attend son tour
 
 
+class TestFileParSite(unittest.TestCase):
+    def test_une_file_par_hote(self):
+        from moniteur_etb import http
+
+        a, b = http._file("hote", "www.e.leclerc"), http._file("hote", "www.auchan.fr")
+        self.assertIs(a, http._file("hote", "www.e.leclerc"))
+        self.assertIsNot(a, b)
+        self.assertIs(http._file("shopify", "x.fr"), http.CADENCES["shopify"])
+        self.assertIsNone(http._file(None, "x.fr"))
+
+
 class TestDecouvertesEtalees(unittest.TestCase):
     def test_trois_par_cycle(self):
         from moniteur_etb import surveillance as surv
@@ -146,6 +157,19 @@ class TestDecouvertesEtalees(unittest.TestCase):
             s.verifier_tout(ex)
         self.assertEqual(sum(appels), surv.MAX_DECOUVERTES_PAR_CYCLE)
         self.assertEqual(len(appels), 7)
+
+
+class TestFicheMenagee(unittest.TestCase):
+    def test_intervalle_produit(self):
+        from moniteur_etb.pages import Produit
+
+        p = Produit.depuis_dict({"nom": "UPC 30 ans", "url": "https://www.e.leclerc/fp/x-0196214155336",
+                                 "intervalle_secondes": 120}, 0)
+        self.assertTrue(p.verification_due())
+        p.derniere_verification = time.monotonic()
+        self.assertFalse(p.verification_due())
+        p.derniere_verification -= 120
+        self.assertTrue(p.verification_due())
 
 
 class TestDiscordPaquets(unittest.TestCase):
