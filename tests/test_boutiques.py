@@ -153,12 +153,54 @@ class TestAnalyse(unittest.TestCase):
         b = Boutique(nom="Presta", url="https://p.fr", plateforme="prestashop")
         with web.actif(), mock.patch("moniteur_etb.boutiques.telecharger_page", lambda url: web.telecharger(url).texte()):
             a = analyser(b, COLLECTION, FR, decouvrir=True)
-            self.assertTrue(b.presta_html)
+            self.assertTrue(b.fiche_par_fiche)
             self.assertEqual([(o.item.id, o.dispo, o.prix) for o in a.offres], [("etb", True, 69.9)])
             web.appels.clear()
             a2 = analyser(b, COLLECTION, FR, decouvrir=False)  # cycle suivant : la fiche seule
         self.assertEqual(web.appels, ["https://p.fr/pokemon/12617-etb-30.html"])
         self.assertTrue(a2.offres[0].dispo)
+
+    def test_enseigne_html_recherche_puis_fiches(self):
+        recherche = (
+            '<a href="/fp/pokemon-30a-mini-tin-0196214146297"><img alt="x"><span>Pokémon 30A : Mini Tin</span></a>'
+            '<a href="/fp/pokemon-30a-collection-ultra-premium-journee-0196214155336">Pokémon 30A : Collection Ultra-Premium Journée</a>'
+            '<a href="/fp/coffret-dresseur-elite-mega-0196214100000">Coffret Dresseur d\'élite Méga-Évolution</a>'
+            '<a href="/cat/jouets">Jouets</a>'
+        )
+        def fiche(dispo, prix):
+            return ('<meta property="og:title" content="Pokémon 30A : Collection Ultra-Premium Journée">'
+                    f'<script type="application/ld+json">{{"offers":[{{"price":{prix},'
+                    f'"availability":"https://schema.org/{dispo}"}}]}}</script>' + "<p>texte</p>" * 400)
+        web = FauxWeb({
+            "/recherche?q=": recherche,
+            "ultra-premium-journee-0196214155336": fiche("InStock", 239.99),
+            "mini-tin-0196214146297": fiche("OutOfStock", 14.99).replace("Collection Ultra-Premium Journée", "Mini Tin"),
+        })
+        b = Boutique.depuis_dict({
+            "nom": "E.Leclerc", "url": "https://www.e.leclerc", "plateforme": "html",
+            "recherche_url": "https://www.e.leclerc/recherche?q={q}", "motif_fiche": "/fp/[^/]+-\\d{13}$",
+            "recherches": ["pokemon 30 ans"],
+        }, 0)
+        with web.actif(), mock.patch("moniteur_etb.boutiques.telecharger_page", lambda url: web.telecharger(url).texte()):
+            a = analyser(b, COLLECTION, FR, decouvrir=True)
+            offres = {o.item.id: o for o in a.offres}
+            self.assertEqual(set(offres), {"upc-journee", "mini-tin"})  # l'ETB Méga-Évolution est écarté
+            self.assertTrue(offres["upc-journee"].dispo)
+            self.assertEqual(offres["upc-journee"].prix, 239.99)
+            self.assertFalse(offres["mini-tin"].dispo)
+            self.assertTrue(b.fiche_par_fiche)
+            self.assertFalse(b.verification_due())  # ménagée : pas avant 2 min
+            web.appels.clear()
+            a2 = analyser(b, COLLECTION, FR, decouvrir=False)
+        self.assertEqual(len(web.appels), 2)  # les deux fiches, sans nouvelle recherche
+        self.assertEqual(len(a2.offres), 2)
+
+    def test_enseigne_html_configuration_incomplete(self):
+        with self.assertRaises(ValueError):
+            Boutique.depuis_dict({"nom": "X", "url": "https://x.fr", "plateforme": "html"}, 0)
+        with self.assertRaises(ValueError):
+            Boutique.depuis_dict({"nom": "X", "url": "https://x.fr", "plateforme": "html",
+                                  "recherche_url": "https://x.fr/s?q=", "motif_fiche": "/p/"}, 0)
 
     def test_categories_shopify_filtrees(self):
         web = FauxWeb({

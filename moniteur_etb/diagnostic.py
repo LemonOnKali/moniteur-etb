@@ -12,7 +12,7 @@ import re
 from typing import Callable
 from urllib.parse import unquote, urlsplit, urlunsplit
 
-from .boutiques import Analyse, Boutique, analyser
+from .boutiques import Analyse, Boutique, analyser, liens_fiches
 from .collection import Collection
 from .http import ErreurVerification, telecharger, telecharger_page
 from .modeles import Offre
@@ -80,8 +80,8 @@ def diagnostiquer_boutique(b: Boutique, collection: Collection, langues: frozens
     ]
     if b.categories_trouvees:
         lignes.append(f"    catégories 30 ans : {', '.join(b.categories_trouvees)}")
-    if b.presta_html:
-        lignes.append("    PrestaShop sans recherche JSON : fiches lues une à une")
+    if b.fiche_par_fiche:
+        lignes.append("    fiches lues une à une (vérification toutes les 2 min)")
     for note in ([b.note] if b.note else []) + analyse.notes:
         lignes.append(f"    note : {note}")
     for erreur in analyse.erreurs:
@@ -150,7 +150,9 @@ def diagnostiquer_produit(produit: Produit, offre: Offre) -> None:
         lignes.append(f"    détail : {offre.detail}")
     if offre.trop_chere:
         lignes.append(f"    💸 au-dessus du plafond {formater_prix(offre.prix_max)}")
-    if offre.source in ("texte", "auto") or offre.dispo is None:
+    # Seconde lecture (extraits pour régler la fiche) seulement si la détection est faible ou
+    # en échec : une grande enseigne qui limite son débit n'est pas sollicitée deux fois.
+    if offre.dispo is None or offre.detail.startswith(("mot", "aucun")):
         try:
             page = telecharger_page(produit.url)
         except ErreurVerification as err:
@@ -270,4 +272,17 @@ def lister_liens(url: str) -> int:
     if not vus:
         hotes = sorted({urlsplit(html.unescape(m.group(1))).netloc for m in re.finditer(r'href\s*=\s*["\'](https?://[^"\'#]+)', page, re.IGNORECASE)})
         print("  aucun. Domaines liés depuis la page : " + ", ".join(hotes[:40]))
+    # Fiches du site lui-même (page de recherche ou de catégorie d'une enseigne) :
+    # de quoi écrire le « motif_fiche » d'une boutique html.
+    fiches = liens_fiches(page, url, _RE_FICHE_PROBABLE)
+    print(f"{len(fiches)} fiche(s) probable(s) du site sur la page :")
+    for f in fiches[:40]:
+        print(f"  {urlsplit(f.url).path}   « {f.titre[:80]} »")
+    if not fiches:
+        texte = texte_visible(page)
+        print(f"  aucune. Page de {len(page)} caractères, texte visible {len(texte)} : {texte[:300]!r}")
     return 0
+
+
+# Adresse qui ressemble à une fiche : long identifiant numérique, ou /p/, /fp/, /pr-, /products/…
+_RE_FICHE_PROBABLE = re.compile(r"\d{6,}|/(p|fp|products?|produits?|dp)/|/pr-|/ref-", re.IGNORECASE)

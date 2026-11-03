@@ -10,11 +10,12 @@ from __future__ import annotations
 import html
 import json
 import re
+import time
 from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
-from .http import ErreurVerification, telecharger_json, telecharger_page
+from .http import PAUSES, ErreurHTTP, ErreurVerification, en_pause, telecharger_json, telecharger_page
 from .modeles import Resultat
 from .texte import lire_prix, normaliser, texte_visible
 
@@ -44,6 +45,10 @@ class Produit:
     prix_max: float | None = None  # au-delà, on ne signale pas (surcharge l'item et PRIX_MAX)
     mots_explicites: bool = False  # mots_rupture / mots_stock fournis dans produits.json
     actif: bool = True
+    a_venir: bool = False  # fiche pas encore en ligne (404) : « pas encore en ligne », pas une erreur
+    ecart: float | None = None  # secondes entre deux pages de ce site (grande enseigne qui limite le débit)
+    intervalle: float | None = None  # secondes entre deux lectures (grandes enseignes à ménager)
+    derniere_verification: float | None = None
     type_detecte: str | None = None  # renseigné en mode "auto"
 
     @classmethod
@@ -74,11 +79,16 @@ class Produit:
                 except re.error as err:
                     raise ValueError(f"produit '{nom}' : '{nom_champ}' invalide ({err})")
         prix_max = brut.get("prix_max")
-        if prix_max is not None:
-            try:
-                prix_max = float(prix_max)
-            except (TypeError, ValueError):
-                raise ValueError(f"produit '{nom}' : 'prix_max' doit être un nombre")
+        intervalle = brut.get("intervalle_secondes")
+        ecart = brut.get("ecart_secondes")
+        try:
+            prix_max = float(prix_max) if prix_max is not None else None
+            intervalle = float(intervalle) if intervalle is not None else None
+            ecart = float(ecart) if ecart is not None else None
+        except (TypeError, ValueError):
+            raise ValueError(
+                f"produit '{nom}' : 'prix_max', 'intervalle_secondes' et 'ecart_secondes' doivent être des nombres"
+            ) from None
         variante = brut.get("variante")
         return cls(
             nom=nom,
@@ -94,7 +104,15 @@ class Produit:
             regex_rupture=str(regex_rupture) if regex_rupture else None,
             mots_explicites=bool(brut.get("mots_rupture") or brut.get("mots_stock")),
             actif=bool(brut.get("actif", True)),
+            a_venir=bool(brut.get("a_venir", False)),
+            intervalle=intervalle,
+            ecart=ecart,
         )
+
+    def verification_due(self) -> bool:
+        if not self.intervalle or self.derniere_verification is None:
+            return True
+        return time.monotonic() - self.derniere_verification >= self.intervalle - 1
 
 
 def domaine(url: str) -> str:
@@ -366,6 +384,15 @@ def image_og(page_html: str) -> str | None:
     return lien if lien.startswith("http") else None
 
 
+def titre_page(page_html: str) -> str | None:
+    """Titre de la fiche : og:title, sinon <title>."""
+    m = _RE_OG_TITRE.search(page_html) or _RE_TITRE.search(page_html)
+    if not m:
+        return None
+    titre = " ".join(html.unescape(re.sub(r"<[^>]+>", " ", m.group(1))).split())
+    return titre or None
+
+
 def extraire_prix(page_html: str) -> float | None:
     for motif in (_RE_PRIX_META, _RE_PRIX_JSONLD, _RE_PRIX_AUTRES):
         m = motif.search(page_html)
@@ -417,12 +444,15 @@ def lire_page_texte(produit: Produit, page: str) -> Resultat:
     texte = texte_visible(page)
     raison = page_anti_robot(page, texte)
     if raison:
-        raise ErreurVerification(raison)
+        # Page de défi anti-robot : on laisse le site tranquille un moment.
+        duree = PAUSES.echec(urlsplit(produit.url).hostname or "")
+        raise ErreurVerification(f"{raison} — pause {duree / 60:.0f} min")
     prix = extraire_prix(page)
     image = image_og(page)
+    titre = titre_page(page)
 
     def resultat(dispo: bool, detail: str) -> Resultat:
-        return Resultat(dispo=dispo, prix=prix, detail=detail, source="texte", image=image)
+        return Resultat(dispo=dispo, prix=prix, detail=detail, source="texte", image=image, titre=titre)
 
     # Expressions régulières sur le HTML brut (pages JavaScript, marqueurs CSS…).
     if produit.regex_stock:
@@ -457,19 +487,37 @@ def lire_page_texte(produit: Produit, page: str) -> Resultat:
     trouves = [m for m in produit.mots_rupture if normaliser(m) in texte]
     if trouves:
         return resultat(False, f"mot de rupture : « {trouves[0]} »")
-    if len(texte) < 1500:
-        # Aucun signal positif et presque pas de texte : page rendue en JavaScript.
-        # On refuse de conclure « en stock » sur une absence de preuve.
+    if len(texte) < 1500 or not produit.mots_explicites:
+        # Aucun signal positif : on refuse de conclure « en stock » sur une absence
+        # de preuve (page JavaScript, page de défi, fiche d'une autre forme…). Seuls
+        # des mots de rupture choisis pour cette enseigne autorisent ce raisonnement.
         raise ErreurVerification(
-            f"page rendue en JavaScript ({len(texte)} caractères visibles) : impossible de conclure, "
-            "utilise regex_stock / mots_stock"
+            f"aucune donnée de disponibilité lisible ({len(texte)} caractères visibles) : "
+            "impossible de conclure, règle regex_stock / mots_stock pour cette fiche"
         )
     return resultat(True, "aucun mot de rupture")
 
 
+def ordre_auto(url: str) -> list[str]:
+    """Types à essayer, le plus probable d'après l'adresse en premier.
+
+    Une grande enseigne (Leclerc, Auchan…) ne doit pas recevoir de requêtes
+    d'API Shopify ou WooCommerce inutiles : son anti-robot bloquerait ensuite la
+    vraie fiche. Sans indice dans l'adresse, la lecture « texte » passe en tête.
+    """
+    chemin = urlsplit(url).path
+    if "/products/" in chemin:
+        return ["shopify", "texte"]
+    if re.search(r"/(produit|product)/", chemin):
+        return ["woocommerce", "texte"]
+    if re.search(r"/\d+-[^/]+\.html$", chemin):
+        return ["prestashop", "texte"]
+    return ["texte", "prestashop"]
+
+
 def verifier_auto(produit: Produit) -> Resultat:
     """Détecte le type de boutique une fois, puis le réutilise pour les cycles suivants."""
-    ordre = [produit.type_detecte] if produit.type_detecte else ["shopify", "woocommerce", "prestashop", "texte"]
+    ordre = [produit.type_detecte] if produit.type_detecte else ordre_auto(produit.url)
     erreurs: list[str] = []
     for candidat in ordre:
         try:
@@ -478,6 +526,8 @@ def verifier_auto(produit: Produit) -> Resultat:
             return resultat
         except ErreurVerification as err:
             erreurs.append(f"{candidat} : {err}")
+            if en_pause(produit.url):
+                break
     raise ErreurVerification(" | ".join(erreurs))
 
 
@@ -494,7 +544,14 @@ def verifier(produit: Produit) -> Resultat:
     """Ne lève jamais : toute erreur devient un Resultat(dispo=None)."""
     try:
         return VERIFICATEURS[produit.type](produit)
+    except ErreurHTTP as err:
+        if produit.a_venir and err.code in (404, 410):
+            # Produit annoncé dont l'enseigne n'a pas encore publié la fiche : on attend.
+            return Resultat(dispo=False, detail="fiche pas encore en ligne", source=produit.type)
+        return Resultat(dispo=None, detail=str(err), source=produit.type)
     except ErreurVerification as err:
+        if produit.a_venir and "HTTP 404" in str(err):  # mode auto : erreurs regroupées
+            return Resultat(dispo=False, detail="fiche pas encore en ligne", source=produit.type)
         return Resultat(dispo=None, detail=str(err), source=produit.type)
     except Exception as err:  # garde-fou : un bug sur un produit ne stoppe pas les autres
         return Resultat(dispo=None, detail=f"erreur inattendue {type(err).__name__} : {err}", source=produit.type)

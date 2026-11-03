@@ -5,21 +5,67 @@
     "url": "https://www.amazon.fr/dp/B0H8SVJL9F",
     "type": "texte",
     "regex_stock": "id=\"add-to-cart-button\"",
-    "note": "En stock si le bouton Ajouter au panier de la boîte d'achat est présent (« Disponible sur invitation » = pas en stock). Prix lu dans la page, filtré par PRIX_MAX."
+    "note": "En stock si le bouton Ajouter au panier de la boîte d'achat est présent (« Disponible sur invitation » = pas en stock). Prix lu dans la page, filtré par PRIX_MAX.",
+    "intervalle_secondes": 60,
+    "ecart_secondes": 5
+  },
+  {
+    "boutique": "Amazon",
+    "nom": "Collection Ultra-Premium Journée (Mentali) 30 ans",
+    "item": "upc-journee",
+    "url": "https://www.amazon.fr/dp/B0H8T3CLB1",
+    "type": "texte",
+    "regex_stock": "id=\"add-to-cart-button\"",
+    "note": "En stock si le bouton Ajouter au panier de la boîte d'achat est présent (« Disponible sur invitation » = pas en stock).",
+    "intervalle_secondes": 60,
+    "ecart_secondes": 5
+  },
+  {
+    "boutique": "Amazon",
+    "nom": "Collection Ultra-Premium 30 ans",
+    "item": "upc",
+    "url": "https://www.amazon.fr/dp/B0H8SZV8L7",
+    "type": "texte",
+    "regex_stock": "id=\"add-to-cart-button\"",
+    "note": "En stock si le bouton Ajouter au panier de la boîte d'achat est présent (« Disponible sur invitation » = pas en stock).",
+    "intervalle_secondes": 60,
+    "ecart_secondes": 5
+  },
+  {
+    "boutique": "Amazon",
+    "nom": "Mini Tin Mentali 30 ans",
+    "url": "https://www.amazon.fr/dp/B0H8T6L1SF",
+    "type": "texte",
+    "regex_stock": "id=\"add-to-cart-button\"",
+    "note": "En stock si le bouton Ajouter au panier de la boîte d'achat est présent (« Disponible sur invitation » = pas en stock).",
+    "intervalle_secondes": 180,
+    "ecart_secondes": 5
+  },
+  {
+    "boutique": "Amazon",
+    "nom": "Mini Tin Noctali 30 ans",
+    "url": "https://www.amazon.fr/dp/B0H8T86JNR",
+    "type": "texte",
+    "regex_stock": "id=\"add-to-cart-button\"",
+    "note": "En stock si le bouton Ajouter au panier de la boîte d'achat est présent (« Disponible sur invitation » = pas en stock).",
+    "intervalle_secondes": 180,
+    "ecart_secondes": 5
   },
   {
     "boutique": "MediaMarkt (BE)",
     "nom": "Bundle 6 boosters 30 ans",
     "url": "https://www.mediamarkt.be/fr/product/_30th-anniversary-6-bo-bundle-cartes-pokemon-2251005.html",
     "type": "texte",
-    "note": "MediaMarkt répond 403 aux serveurs GitHub : à tester depuis le PC."
+    "note": "MediaMarkt répond 403 aux serveurs GitHub : à tester depuis le PC.",
+    "ecart_secondes": 5
   },
   {
     "boutique": "MediaMarkt (BE)",
     "nom": "Mini Tin 30 ans",
     "url": "https://www.mediamarkt.be/fr/product/_pokemon-30th-anniversary-mini-tin-pokemon-cards-pokemon-cards-2251004.html",
     "type": "texte",
-    "note": "MediaMarkt répond 403 aux serveurs GitHub : à tester depuis le PC."
+    "note": "MediaMarkt répond 403 aux serveurs GitHub : à tester depuis le PC.",
+    "ecart_secondes": 5
   },
   {
     "boutique": "Cdiscount",
@@ -51,7 +97,151 @@
       "indisponible",
       "rupture",
       "pas disponible actuellement"
-    ]
+    ],
+    "ecart_secondes": 5
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Collection Ultra-Premium Journée (Mentali) 30 ans",
+    "item": "upc-journee",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-collection-ultra-premium-journee-mentali-30e-anniversaire-pokemon-0196214155336",
+    "type": "texte",
+    "intervalle_secondes": 120,
+    "a_venir": true,
+    "note": "Lu via schema.org. Carrefour bloque GitHub : depuis le PC. Adresses sans nom exact construites avec l'EAN (a_venir) ; la recherche Carrefour (boutiques-pc.json) prend le relais.",
+    "ecart_secondes": 8
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Collection Ultra-Premium Soirée (Noctali) 30 ans",
+    "item": "upc-soiree",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-collection-ultra-premium-soiree-noctali-30e-anniversaire-pokemon-0196214155398",
+    "type": "texte",
+    "intervalle_secondes": 120,
+    "a_venir": true,
+    "ecart_secondes": 8
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Coffret Dresseur d'Élite 30 ans",
+    "item": "etb",
+    "url": "https://www.carrefour.fr/p/cartes-a-jouer-et-a-collectionner-coffret-dresseur-d-elite-30e-anniversaire-pokemon-0196214144835",
+    "type": "texte",
+    "intervalle_secondes": 600,
+    "ecart_secondes": 8
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Collection Premium Métamorph 30 ans",
+    "item": "metamorph-premium",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-coffret-premium-8-boosters-30e-anniversaire-pokemon-0196214147430",
+    "type": "texte",
+    "intervalle_secondes": 600,
+    "a_venir": true,
+    "ecart_secondes": 8
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Bundle 6 boosters 30 ans",
+    "item": "bundle",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-bundle-6-boosters-30e-anniversaire-pokemon-0196214145221",
+    "type": "texte",
+    "intervalle_secondes": 600,
+    "a_venir": true,
+    "ecart_secondes": 8
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Coffret Nymphali-ex 30 ans",
+    "item": "coffret-ex",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-nymphali-ex-30e-anniversaire-pokemon-0196214147102",
+    "type": "texte",
+    "intervalle_secondes": 600,
+    "ecart_secondes": 8
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Coffret Amphinobi-ex 30 ans",
+    "item": "coffret-ex",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-amphinobi-ex-30e-anniversaire-pokemon-0196214147164",
+    "type": "texte",
+    "intervalle_secondes": 600,
+    "ecart_secondes": 8
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Pokébox 30 ans",
+    "item": "pokebox",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-pokebox-30e-anniversaire-pokemon-0196214146907",
+    "type": "texte",
+    "intervalle_secondes": 600,
+    "a_venir": true,
+    "ecart_secondes": 8
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Pokébox Nymphali-ex 30 ans",
+    "item": "pokebox",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-pokebox-nymphali-ex-30e-anniversaire-pokemon-0196214146976",
+    "type": "texte",
+    "intervalle_secondes": 600,
+    "a_venir": true,
+    "ecart_secondes": 8
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Collection Poster 30 ans",
+    "item": "poster",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-collection-poster-30e-anniversaire-pokemon-0196214147225",
+    "type": "texte",
+    "intervalle_secondes": 600,
+    "ecart_secondes": 8
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Collection Classeur 30 ans",
+    "item": "classeur",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-collection-classeur-30e-anniversaire-pokemon-0196214145153",
+    "type": "texte",
+    "intervalle_secondes": 600,
+    "ecart_secondes": 8
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Mini Tin 30 ans",
+    "item": "mini-tin",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-mini-tin-modele-aleatoire-30e-anniversaire-pokemon-0196214146297",
+    "type": "texte",
+    "intervalle_secondes": 600,
+    "a_venir": true,
+    "ecart_secondes": 8
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Collection Autocollants (Tripack) 30 ans",
+    "item": "autocollants",
+    "url": "https://www.carrefour.fr/p/tripack-pokemon-collection-autocollant-reajustable-30th-celebration-0196214144972",
+    "type": "texte",
+    "intervalle_secondes": 600,
+    "ecart_secondes": 8
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Duopack Évoli 30 ans",
+    "item": "duopack",
+    "url": "https://www.carrefour.fr/p/pack-de-2-boosters-pokemon-30e-anniversaire-pokemon-0196214152311",
+    "type": "texte",
+    "intervalle_secondes": 600,
+    "ecart_secondes": 8
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Coffret Journée Pokémon 2026 (30 ans)",
+    "item": "pokemon-day",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-pikachu-3-boosters-collection-journee-pokemon-2026-cartes-a-collectionner-francaise-3667036159231",
+    "type": "texte",
+    "intervalle_secondes": 600,
+    "ecart_secondes": 8
   },
   {
     "boutique": "Fnac",
@@ -62,19 +252,30 @@
     "note": "Fnac (Datadome) répond 403 même depuis une box : il faut un vrai navigateur. Garde l'alerte « M'alerter » de Fnac."
   },
   {
-    "boutique": "Carrefour",
-    "nom": "Coffret Dresseur d'Élite 30 ans",
-    "url": "https://www.carrefour.fr/p/cartes-a-jouer-et-a-collectionner-coffret-dresseur-d-elite-30e-anniversaire-pokemon-0196214144835",
-    "type": "texte",
-    "note": "Lu via schema.org (OutOfStock / InStock). Fonctionne depuis une box, pas depuis GitHub."
-  },
-  {
     "boutique": "Smyths Toys",
     "nom": "Coffret Dresseur d'Élite 30 ans",
     "url": "https://www.smythstoys.com/fr/fr-fr/jouets/jeux-de-societe-et-puzzles/cartes-a-collectionner/cartes-pokemon/pokemon-coffret-dresseur-delite-30eme-anniversaire/p/261821",
     "type": "texte",
     "actif": false,
     "note": "Smyths (PerimeterX) bloque aussi depuis une box : il faut un vrai navigateur."
+  },
+  {
+    "boutique": "Smyths Toys",
+    "nom": "Collection Ultra-Premium Journée (Mentali) 30 ans",
+    "item": "upc-journee",
+    "url": "https://www.smythstoys.com/fr/fr-fr/jouets/jeux-de-societe-et-puzzles/cartes-a-collectionner/cartes-pokemon/pokemon-coffret-collection-ultra-premium-30eme-anniversaire-mentali/p/264194",
+    "type": "texte",
+    "actif": false,
+    "note": "Smyths (PerimeterX) bloque aussi depuis une box : il faut un vrai navigateur. Réassort annoncé le 27/11."
+  },
+  {
+    "boutique": "Smyths Toys",
+    "nom": "Collection Ultra-Premium Soirée (Noctali) 30 ans",
+    "item": "upc-soiree",
+    "url": "https://www.smythstoys.com/fr/fr-fr/jouets/jeux-de-societe-et-puzzles/cartes-a-collectionner/cartes-pokemon/pokemon-coffret-collection-ultra-premium-30eme-anniversaire-noctali/p/264183",
+    "type": "texte",
+    "actif": false,
+    "note": "Smyths (PerimeterX) bloque aussi depuis une box : il faut un vrai navigateur. Sortie annoncée le 06/11."
   },
   {
     "boutique": "King Jouet",

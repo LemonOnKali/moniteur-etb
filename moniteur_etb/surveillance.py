@@ -7,15 +7,17 @@ import json
 import sys
 import time
 from collections import Counter
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import Future, ThreadPoolExecutor, wait
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
+from urllib.parse import urlsplit
 
 from . import etat as etat_mod
 from .boutiques import Analyse, Boutique, analyser
 from .collection import Collection
 from .discord import BLEU, ORANGE, Discord, embed_offre, embed_rupture, resume_alertes
+from .http import regler_ecart
 from .modeles import Offre, cle_url
 from .pages import Produit, verifier
 from .reglages import Reglages
@@ -23,6 +25,10 @@ from .texte import formater_prix
 
 
 MAX_DECOUVERTES_PAR_CYCLE = 3  # hors premier cycle, où chaque boutique est découverte
+# Premier cycle : les alertes des boutiques rapides partent sans attendre les grandes
+# enseignes qui espacent leurs pages (15 fiches Leclerc à 12 s d'écart = 3 min).
+PREMIER_CYCLE_MAX_S = 45.0
+RESUME_MAX_S = 300.0  # résumé de lancement envoyé au plus tard 5 min après le départ
 
 
 def log(message: str) -> None:
@@ -36,6 +42,15 @@ def maintenant() -> str:
 # --------------------------------------------------------------------------- #
 # Chargement des fichiers de configuration
 # --------------------------------------------------------------------------- #
+
+
+def _lire_listes(chemins: str, cle: str) -> list[Any]:
+    """Un ou plusieurs fichiers séparés par des virgules (« produits.json,produits-pc.json »)."""
+    elements: list[Any] = []
+    for chemin in (c.strip() for c in chemins.split(",")):
+        if chemin:
+            elements += _lire_liste(chemin, cle)
+    return elements
 
 
 def _lire_liste(chemin: str, cle: str) -> list[Any]:
@@ -58,7 +73,7 @@ def charger_produits(chemin: str) -> list[Produit]:
         return []
     produits: list[Produit] = []
     vues: set[str] = set()
-    for index, element in enumerate(_lire_liste(chemin, "produits")):
+    for index, element in enumerate(_lire_listes(chemin, "produits")):
         try:
             produit = Produit.depuis_dict(element, index)
         except ValueError as err:
@@ -70,6 +85,8 @@ def charger_produits(chemin: str) -> list[Produit]:
             log(f"⚠️  Produit ignoré — URL en double : {produit.url}")
             continue
         vues.add(cle_url(produit.url))
+        if produit.ecart:
+            regler_ecart(urlsplit(produit.url).hostname or "", produit.ecart)
         produits.append(produit)
     return produits
 
@@ -79,7 +96,7 @@ def charger_boutiques(chemin: str) -> list[Boutique]:
         return []
     boutiques: list[Boutique] = []
     vues: set[str] = set()
-    for index, element in enumerate(_lire_liste(chemin, "boutiques")):
+    for index, element in enumerate(_lire_listes(chemin, "boutiques")):
         try:
             boutique = Boutique.depuis_dict(element, index)
         except ValueError as err:
@@ -91,6 +108,8 @@ def charger_boutiques(chemin: str) -> list[Boutique]:
             log(f"⚠️  Boutique ignorée — URL en double : {boutique.url}")
             continue
         vues.add(boutique.url)
+        if boutique.ecart:
+            regler_ecart(urlsplit(boutique.url).hostname or "", boutique.ecart)
         boutiques.append(boutique)
     return boutiques
 
@@ -130,6 +149,17 @@ class Surveillance:
         self.etat = etat
         self.cycle_n = 0
         self._erreurs_vues: dict[str, str] = {}
+        # Vérifications encore en cours d'un cycle à l'autre (grande enseigne lente) :
+        # elles ne retardent pas les boutiques rapides, leur résultat est pris plus tard.
+        self._en_cours: dict[Future[Any], Boutique | Produit] = {}
+        self._vus: set[int] = set()  # sources dont un résultat a déjà été récolté
+        self._etat_initial_vide = not etat
+        self.attendre_tout = False  # un seul passage (--une-fois) : tout attendre au 1er cycle
+
+    @property
+    def tour_complet(self) -> bool:
+        """Vrai quand chaque boutique et chaque fiche a donné au moins un résultat."""
+        return len(self._vus) >= len(self.boutiques) + len(self.produits)
 
     # -- Vérifications ------------------------------------------------------ #
 
@@ -155,26 +185,40 @@ class Surveillance:
             erreur=r.detail if r.dispo is None else "",
         )
 
-    def verifier_tout(self, executeur: ThreadPoolExecutor, forcer_decouverte: bool = False) -> tuple[list[Offre], Bilan]:
+    def verifier_tout(self, executeur: ThreadPoolExecutor, forcer_decouverte: bool = False,
+                      attente: float | None = None) -> tuple[list[Offre], Bilan]:
+        """Lance les vérifications dues et récolte celles terminées.
+
+        `attente` (secondes) : au-delà, les vérifications pas encore finies continuent
+        en arrière-plan et seront récoltées au cycle suivant. None = tout attendre.
+        """
         bilan = Bilan()
         intervalle_decouverte = self.reglages.decouverte_minutes * 60
-        futurs: dict[Any, Boutique | Produit] = {}
+        occupees = {id(o) for o in self._en_cours.values()}
+        futurs = self._en_cours
         # Découvertes étalées : quelques boutiques par cycle (les plus anciennes d'abord)
         # plutôt que toutes en même temps toutes les 15 min.
         dues = sorted((b for b in self.boutiques if b.decouverte_due(intervalle_decouverte)),
                       key=lambda b: b.derniere_decouverte or 0.0)
         a_decouvrir = {id(b) for b in (dues if forcer_decouverte else dues[:MAX_DECOUVERTES_PAR_CYCLE])}
         for b in self.boutiques:
+            if id(b) in occupees:
+                continue
             decouvrir = b.derniere_decouverte is None or id(b) in a_decouvrir
             if not decouvrir and not b.verification_due():
                 continue
             futurs[executeur.submit(analyser, b, self.collection, self.reglages.langues, decouvrir)] = b
         for p in self.produits:
+            if id(p) in occupees or not p.verification_due():
+                continue
+            p.derniere_verification = time.monotonic()
             futurs[executeur.submit(self.offre_produit, p)] = p
 
+        finis, _ = wait(list(futurs), timeout=attente)
         offres: dict[str, Offre] = {}
-        for futur in as_completed(futurs):
-            origine = futurs[futur]
+        for futur in finis:
+            origine = futurs.pop(futur)
+            self._vus.add(id(origine))
             if isinstance(origine, Boutique):
                 analyse: Analyse = futur.result()
                 bilan.requetes += analyse.requetes
@@ -206,11 +250,19 @@ class Surveillance:
     def cycle(self, executeur: ThreadPoolExecutor, forcer_decouverte: bool = False) -> Bilan:
         self.cycle_n += 1
         debut = time.monotonic()
-        offres, bilan = self.verifier_tout(executeur, forcer_decouverte)
+        # Les vérifications lentes ne retiennent pas le cycle : elles continuent en
+        # arrière-plan et leur résultat est pris à un cycle suivant.
+        if self.cycle_n == 1:
+            attente = None if self.attendre_tout else PREMIER_CYCLE_MAX_S
+        else:
+            attente = max(5.0, self.reglages.intervalle_secondes - 5)
+        # « Nouvelle fiche » : seulement si l'on connaissait déjà l'état de toutes les
+        # sources (sinon une fiche récoltée en retard au 1er tour passerait pour nouvelle).
+        reference = not self._etat_initial_vide or self.tour_complet
+        offres, bilan = self.verifier_tout(executeur, forcer_decouverte, attente)
         bilan.offres = offres
         horodatage = maintenant()
         premier = self.cycle_n == 1
-        etat_vierge = not self.etat
         alertes: list[tuple[Offre, bool]] = []
         ruptures: list[Offre] = []
 
@@ -236,7 +288,7 @@ class Surveillance:
                 if self._alerte_recente(derniere_alerte):
                     log(f"🔕 {o.boutique} · {o.item.nom} : déjà signalé il y a moins de {self.reglages.anti_spam_minutes:.0f} min")
                 else:
-                    alertes.append((o, o.cle not in self.etat and not etat_vierge))
+                    alertes.append((o, reference and o.cle not in self.etat))
             elif not dispo and avant is True and self.reglages.alerte_rupture:
                 ruptures.append(o)
 
@@ -354,6 +406,10 @@ def executer(surveillance: Surveillance, une_fois: bool = False) -> int:
     debut = time.monotonic()
     fin = debut + duree
     taches = len(surveillance.boutiques) + len(surveillance.produits)
+    surveillance.attendre_tout = une_fois
+    # Résumé de lancement (exécution manuelle sur GitHub) : envoyé quand chaque source a
+    # répondu une fois, avec les fiches récoltées sur les premiers cycles.
+    resume: Bilan | None = Bilan() if r.evenement_github == "workflow_dispatch" else None
     with ThreadPoolExecutor(max_workers=max(1, min(r.max_workers, taches))) as executeur:
         while True:
             top = time.monotonic()
@@ -365,8 +421,13 @@ def executer(surveillance: Surveillance, une_fois: bool = False) -> int:
                 + f") : {len(bilan.offres)} fiches, {bilan.en_stock} en stock, {bilan.rupture} en rupture, "
                 f"{len(bilan.erreurs)} source(s) en erreur"
             )
-            if surveillance.cycle_n == 1 and r.evenement_github == "workflow_dispatch":
-                surveillance.resume_discord(bilan, duree / 60, intervalle)
+            if resume is not None:
+                vues = {o.cle for o in resume.offres}
+                resume.offres += [o for o in bilan.offres if o.cle not in vues]
+                resume.erreurs.update(bilan.erreurs)
+                if surveillance.tour_complet or une_fois or time.monotonic() - debut >= RESUME_MAX_S:
+                    surveillance.resume_discord(resume, duree / 60, intervalle)
+                    resume = None
             if une_fois or arret["demande"]:
                 break
             prochain = top + intervalle

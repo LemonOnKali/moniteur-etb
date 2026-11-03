@@ -116,13 +116,24 @@ class Cadence:
         self._prochain = 0.0
         self._verrou = threading.Lock()
 
-    def attendre(self) -> None:
+    def attendre(self, hote: str = "") -> bool:
+        """Attend son tour. Renvoie False si `hote` est passé en pause pendant
+        l'attente : la requête est abandonnée sans attendre la fin de son créneau
+        (vingt fiches d'un site bloqué ne patientent pas chacune 8 s pour rien)."""
         with self._verrou:
             maintenant = time.monotonic()
             depart = max(maintenant, self._prochain)
             self._prochain = depart + self.intervalle
-        if depart > maintenant:
-            time.sleep(depart - maintenant)
+        if not hote:
+            if depart > maintenant:
+                time.sleep(depart - maintenant)
+            return True
+        while PAUSES.restant(hote) <= 0:
+            reste = depart - time.monotonic()
+            if reste <= 0:
+                return True
+            time.sleep(min(reste, 0.5))
+        return False
 
     def ralentir(self) -> None:
         with self._verrou:
@@ -135,6 +146,27 @@ class Cadence:
 
 
 CADENCES = {"shopify": Cadence(intervalle=1.5, minimum=1.2, maximum=8.0)}
+ECART_PAGES_S = 2.0  # pages HTML d'un même site : une toutes les 2 s au plus (grandes enseignes)
+_CADENCES_HOTES: dict[str, Cadence] = {}
+_VERROU_HOTES = threading.Lock()
+
+
+def regler_ecart(hote: str, secondes: float) -> None:
+    """Écart minimal entre deux pages d'un site (champ « ecart_secondes » de la configuration)."""
+    with _VERROU_HOTES:
+        actuelle = _CADENCES_HOTES.get(hote)
+        if actuelle is None or actuelle.minimum < secondes:
+            _CADENCES_HOTES[hote] = Cadence(intervalle=secondes, minimum=secondes, maximum=max(10.0, secondes * 4))
+
+
+def _file(cadence: str | None, hote: str) -> Cadence | None:
+    """File d'attente d'un groupe (« shopify ») ou propre au site (« hote »)."""
+    if cadence != "hote":
+        return CADENCES.get(cadence or "")
+    with _VERROU_HOTES:
+        if hote not in _CADENCES_HOTES:
+            _CADENCES_HOTES[hote] = Cadence(intervalle=ECART_PAGES_S, minimum=ECART_PAGES_S, maximum=10.0)
+        return _CADENCES_HOTES[hote]
 
 
 def en_pause(url: str) -> bool:
@@ -188,17 +220,19 @@ def telecharger(url: str, accept: str = "*/*", ajax: bool = False, pause: bool =
     Lève ErreurVerification avec un message lisible en cas d'échec, et met
     l'hôte en pause s'il signale une limite de débit ou un blocage (sauf
     `pause=False` : limite propre à une API, le reste du site reste joignable).
-    `cadence` (ex. "shopify") fait passer la requête par la file de ce groupe.
+    `cadence` : "shopify" fait passer la requête par la file commune Shopify,
+    "hote" par celle du site (pages HTML des grandes enseignes).
     """
     hote = urlsplit(url).hostname or ""
     if PAUSES.restant(hote) > 0:
         raise ErreurVerification("site en pause (limite de débit ou blocage)")
-    file = CADENCES.get(cadence or "")
+    file = _file(cadence, hote)
 
     derniere: Exception | None = None
     for tentative in range(1, TENTATIVES + 1):
-        if file:
-            file.attendre()
+        if file and not file.attendre(hote):
+            # Le site s'est mis à bloquer pendant que cette requête attendait son tour.
+            raise ErreurVerification("site en pause (limite de débit ou blocage)")
         try:
             requete = Request(url, headers=_entetes(accept, ajax))
             with urlopen(requete, timeout=TIMEOUT_S) as rep:
@@ -220,17 +254,21 @@ def telecharger(url: str, accept: str = "*/*", ajax: bool = False, pause: bool =
                 derniere = err
                 time.sleep(1.5 * tentative)
                 continue
-            # Groupe à cadence (Shopify) : un 429 vient de la limite commune, déjà gérée
-            # en ralentissant la file ; inutile de bloquer cette boutique en plus.
-            if err.code in CODES_PAUSE and pause and not (file and err.code == 429):
+            # File commune Shopify : un 429 vient de la limite partagée, déjà gérée en
+            # ralentissant la file ; inutile de bloquer cette boutique en plus. Une
+            # enseigne à file propre (« hote ») qui répond 429 est mise en pause.
+            if err.code in CODES_PAUSE and pause and not (cadence == "shopify" and err.code == 429):
                 duree = PAUSES.echec(hote)
                 raise ErreurHTTP(err.code, f"{err.reason} — pause {duree / 60:.0f} min") from err
             raise ErreurHTTP(err.code, str(err.reason)) from err
         except (URLError, TimeoutError, OSError, EOFError, zlib.error) as err:  # réseau, DNS, TLS…
             derniere = err
-            if tentative < TENTATIVES:
+            # Une enseigne à file propre n'est pas réessayée tout de suite : son nouvel
+            # essai repasserait derrière toutes les requêtes en attente pour ce site.
+            if tentative < TENTATIVES and cadence != "hote":
                 time.sleep(1.0 * tentative)
                 continue
+            break
     raison = getattr(derniere, "reason", None) or derniere
     # Site injoignable : inutile de le réinterroger à chaque requête du cycle.
     duree = PAUSES.echec(hote)
@@ -247,8 +285,12 @@ def telecharger_json(url: str, ajax: bool = False, pause: bool = True, cadence: 
 
 def telecharger_page(url: str) -> str:
     """Télécharge une page HTML. Lève une erreur si le site redirige vers une autre
-    fiche (produit retiré → page catégorie, par exemple)."""
-    reponse = telecharger(url, accept=ACCEPT_HTML)
+    fiche (produit retiré → page catégorie, par exemple).
+
+    Les pages d'un même site passent à la file (ECART_PAGES_S) : vingt fiches
+    Leclerc ne partent pas en rafale, ce qui déclencherait l'anti-robot.
+    """
+    reponse = telecharger(url, accept=ACCEPT_HTML, cadence="hote")
     if redirection_suspecte(url, reponse.url):
         raise ErreurVerification(f"redirigé vers {reponse.url} (fiche retirée ?)")
     return reponse.texte()
@@ -261,7 +303,7 @@ def redirection_suspecte(url_demandee: str, url_finale: str) -> bool:
     chemin_apres = urlsplit(url_finale).path.rstrip("/")
     if chemin_avant == chemin_apres:
         return False
-    identifiants = re.findall(r"\d{4,}", chemin_avant)
+    identifiants = re.findall(r"\d{5,}", chemin_avant)  # EAN, références… (pas « 2026 » dans un nom)
     if identifiants:
         return not all(i in chemin_apres for i in identifiants)
     return not chemin_apres.startswith(chemin_avant) and not chemin_avant.startswith(chemin_apres)

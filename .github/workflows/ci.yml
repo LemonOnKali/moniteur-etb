@@ -20,7 +20,7 @@ jobs:
           python-version: "3.12"
       - name: Vérifier les fichiers JSON
         run: |
-          for f in collection.json boutiques.json produits.json produits-pc.json; do
+          for f in collection.json boutiques.json boutiques-pc.json produits.json produits-pc.json; do
             python -m json.tool "$f" > /dev/null || { echo "::error file=$f::JSON invalide"; exit 1; }
           done
       - name: Tests

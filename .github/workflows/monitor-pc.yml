@@ -46,9 +46,9 @@ jobs:
           DUREE_MINUTES: ${{ vars.DUREE_MINUTES || '350' }}
           INTERVALLE_SECONDES: ${{ vars.INTERVALLE_SECONDES || '60' }}
           FICHIER_PRODUITS: produits-pc.json
-          # Les boutiques sont surveillées depuis GitHub : pas de doublon d'alerte.
-          # (« aucun » et non "" : Windows supprime les variables vides.)
-          FICHIER_BOUTIQUES: aucun
+          # Enseignes qui bloquent GitHub seulement (Carrefour…) : les autres
+          # boutiques sont surveillées depuis GitHub, pas de doublon d'alerte.
+          FICHIER_BOUTIQUES: boutiques-pc.json
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           PYTHONUNBUFFERED: "1"
           PYTHONIOENCODING: utf-8

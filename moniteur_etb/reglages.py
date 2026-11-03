@@ -45,7 +45,7 @@ class Reglages:
     fichier_collection: str = "collection.json"
     fichier_etat: str = "etat.json"
     evenement_github: str = ""
-    max_workers: int = 16
+    max_workers: int = 32
 
     @classmethod
     def depuis_env(cls) -> "Reglages":
@@ -66,5 +66,5 @@ class Reglages:
             fichier_collection=os.environ.get("FICHIER_COLLECTION", "collection.json"),
             fichier_etat=os.environ.get("FICHIER_ETAT", "etat.json"),
             evenement_github=os.environ.get("GITHUB_EVENT_NAME", ""),
-            max_workers=int(_nombre("MAX_WORKERS", 16)),
+            max_workers=int(_nombre("MAX_WORKERS", 32)),
         )

@@ -14,6 +14,12 @@ Deux temps :
 
 Chaque plateforme renvoie la disponibilité directement dans ces réponses
 groupées : une boutique coûte en général 1 à 3 requêtes par cycle.
+
+Plateforme « html » (grandes enseignes : Leclerc, Auchan, JouéClub…) : la
+découverte lit les pages de recherche ou les pages « 30 ans » de l'enseigne et
+garde les liens de fiches de la gamme ; la vérification lit ensuite chaque fiche
+(schema.org…), moins souvent pour ménager le site. Une fiche mise en ligne plus
+tard (UPC à venir…) est repérée à la découverte suivante.
 """
 
 from __future__ import annotations
@@ -30,6 +36,7 @@ from .http import ACCEPT_HTML, ErreurHTTP, ErreurVerification, en_pause, telecha
 from .modeles import Fiche, Offre, cle_url
 from .pages import (
     Produit,
+    page_anti_robot,
     lire_page_prestashop,
     lire_page_texte,
     api_woocommerce,
@@ -37,13 +44,14 @@ from .pages import (
     lire_produit_woocommerce,
     url_absolue,
 )
-from .texte import lire_prix, mots
+from .texte import lire_prix, mots, texte_visible
 
-PLATEFORMES = {"shopify", "woocommerce", "prestashop", "auto"}
-MAX_FICHES_PAGE = 20  # PrestaShop sans recherche JSON : fiches lues une à une, au plus
-PRESTA_HTML_INTERVALLE_S = 120  # … et vérifiées moins souvent que les autres
+PLATEFORMES = {"shopify", "woocommerce", "prestashop", "html", "auto"}
+MAX_FICHES_PAGE = 20  # boutiques lues fiche par fiche : fiches lues par vérification, au plus
+FICHE_PAR_FICHE_INTERVALLE_S = 120  # … et vérifiées moins souvent que les autres
+RECHERCHES_ENSEIGNE = ["pokemon 30 ans", "pokemon 30e anniversaire"]  # plateforme html, par défaut
 # Délai entre deux recherches d'une même boutique pendant la découverte.
-ESPACEMENT_S = {"shopify": 0.0, "woocommerce": 0.5, "prestashop": 0.5}  # Shopify : file commune (http.CADENCES)
+ESPACEMENT_S = {"shopify": 0.0, "woocommerce": 0.5, "prestashop": 0.5, "html": 2.0}  # Shopify : file commune (http.CADENCES)
 _attendre = time.sleep  # remplacé dans les tests
 RECHERCHES_AVEC_CATEGORIE = 3  # Shopify : la catégorie couvre l'essentiel, peu de recherches en plus
 # Catégories Shopify à ignorer même si elles parlent de 30 ans (pas des produits scellés).
@@ -59,6 +67,10 @@ class Boutique:
     recherches: list[str] | None = None  # termes ; None = ceux de collection.json
     prix_max: float | None = None
     intervalle: float | None = None  # secondes entre deux vérifications (défaut : chaque cycle)
+    recherche_url: str | None = None  # html : page de recherche, {q} = terme
+    pages: list[str] = field(default_factory=list)  # html : pages à parcourir (catégorie « 30 ans »…)
+    motif_fiche: re.Pattern[str] | None = None  # html : expression des adresses de fiche
+    ecart: float | None = None  # secondes entre deux pages de ce site (enseigne qui limite le débit)
     actif: bool = True
 
     # État d'exécution (non configurable)
@@ -67,7 +79,8 @@ class Boutique:
     refs: dict[str, str] = field(default_factory=dict)  # clé → handle / id WooCommerce / URL de fiche
     categories_trouvees: list[str] = field(default_factory=list)
     api: str | None = None  # gabarit d'URL d'API qui a fonctionné ({p} = paramètres, {q} = terme)
-    presta_html: bool = False  # PrestaShop sans recherche JSON : fiches lues une à une
+    fiche_par_fiche: bool = False  # html, ou PrestaShop sans recherche JSON : fiches lues une à une
+    rotation: int = 0  # plus de MAX_FICHES_PAGE fiches : lues à tour de rôle
     note: str = ""  # remarque de détection affichée par --diagnostic
     derniere_decouverte: float | None = None
     derniere_verification: float | None = None
@@ -93,8 +106,25 @@ class Boutique:
         try:
             prix_max = float(brut["prix_max"]) if brut.get("prix_max") is not None else None
             intervalle = float(brut["intervalle_secondes"]) if brut.get("intervalle_secondes") is not None else None
+            ecart = float(brut["ecart_secondes"]) if brut.get("ecart_secondes") is not None else None
         except (TypeError, ValueError):
-            raise ValueError(f"boutique '{nom}' : 'prix_max' et 'intervalle_secondes' doivent être des nombres") from None
+            raise ValueError(
+                f"boutique '{nom}' : 'prix_max', 'intervalle_secondes' et 'ecart_secondes' doivent être des nombres"
+            ) from None
+        recherche_url = str(brut.get("recherche_url") or "").strip() or None
+        pages = brut.get("pages") or []
+        motif = brut.get("motif_fiche")
+        if not isinstance(pages, list):
+            raise ValueError(f"boutique '{nom}' : 'pages' doit être une liste")
+        if plateforme == "html":
+            if not motif or not (recherche_url or pages):
+                raise ValueError(f"boutique '{nom}' : plateforme html → 'motif_fiche' et 'recherche_url' ou 'pages' obligatoires")
+            if recherche_url and "{q}" not in recherche_url:
+                raise ValueError(f"boutique '{nom}' : 'recherche_url' doit contenir {{q}} (le terme recherché)")
+        try:
+            motif_fiche = re.compile(str(motif)) if motif else None
+        except re.error as err:
+            raise ValueError(f"boutique '{nom}' : 'motif_fiche' invalide ({err})") from None
         return cls(
             nom=nom,
             url=url,
@@ -103,6 +133,10 @@ class Boutique:
             recherches=[str(r) for r in recherches] if recherches is not None else None,
             prix_max=prix_max,
             intervalle=intervalle,
+            recherche_url=recherche_url,
+            pages=[str(u).strip() for u in pages if str(u).strip()],
+            motif_fiche=motif_fiche,
+            ecart=ecart,
             actif=bool(brut.get("actif", True)),
         )
 
@@ -116,7 +150,8 @@ class Boutique:
 
     def verification_due(self) -> bool:
         """Les boutiques lues fiche par fiche sont ménagées : une vérification toutes les 2 min."""
-        intervalle = self.intervalle if self.intervalle is not None else (PRESTA_HTML_INTERVALLE_S if self.presta_html else 0)
+        defaut = FICHE_PAR_FICHE_INTERVALLE_S if self.fiche_par_fiche or self.plateforme == "html" else 0
+        intervalle = self.intervalle if self.intervalle is not None else defaut
         return self.derniere_verification is None or time.monotonic() - self.derniere_verification >= intervalle - 1
 
 
@@ -284,6 +319,7 @@ def _woo_requete(b: Boutique, parametres: str) -> list[Fiche]:
 _RE_LIEN = re.compile(r"<a\b([^>]*)>(.*?)</a>", re.IGNORECASE | re.DOTALL)
 _RE_HREF = re.compile(r'href\s*=\s*["\']([^"\']+)["\']', re.IGNORECASE)
 _RE_TITLE = re.compile(r'title\s*=\s*["\']([^"\']+)["\']', re.IGNORECASE)
+_RE_PARASITES = re.compile(r"Pipe\.(?:start|end)\(\d+\)")  # marqueurs de gabarit laissés dans les tuiles Auchan
 _RE_URL_FICHE_PRESTA = re.compile(r"/\d+-[^/?#]+\.html(?:[?#]|$)")  # …/12617-nom-du-produit.html
 
 
@@ -295,7 +331,7 @@ def _presta_gabarits(b: Boutique) -> list[str]:
 def _presta_recherche(b: Boutique, terme: str) -> list[Fiche]:
     """Recherche PrestaShop 1.7+ en JSON (comme le fait la page en AJAX), sinon page HTML."""
     q = quote(terme)
-    if b.presta_html and b.api:
+    if b.fiche_par_fiche and b.api:
         return _presta_html(b, b.api.replace("{q}", q))
     gabarits = [b.api] if b.api else _presta_gabarits(b)
     erreurs: list[str] = []
@@ -319,34 +355,40 @@ def _presta_recherche(b: Boutique, terme: str) -> list[Fiche]:
                 raise
             erreurs.append(str(err))
             continue
-        b.api, b.presta_html = gabarit, True
+        b.api, b.fiche_par_fiche = gabarit, True
         b.note = "recherche JSON indisponible (" + " | ".join(dict.fromkeys(erreurs)) + ")"
         return fiches
     raise ErreurVerification("recherche PrestaShop : " + " | ".join(dict.fromkeys(erreurs)))
 
 
 def _presta_html(b: Boutique, url: str) -> list[Fiche]:
-    """Page de résultats HTML : liens des fiches seulement, disponibilité lue ensuite sur chaque fiche.
-
-    Tout lien du site vers une adresse de fiche PrestaShop (« /123-nom.html ») est
-    retenu, avec son texte le plus long (lien image + lien titre) : marche avec
-    tous les thèmes. Les liens du menu ou des meilleures ventes sont écartés
-    ensuite par le classement.
-    """
+    """PrestaShop sans recherche JSON : liens de fiches de la page de résultats HTML."""
     page = telecharger(url, accept=ACCEPT_HTML).texte()
     if "prestashop" not in page.lower():
         raise ErreurVerification("page de recherche non PrestaShop")
-    hote = urlsplit(b.racine).hostname
+    return liens_fiches(page, b.racine, _RE_URL_FICHE_PRESTA)
+
+
+def liens_fiches(page: str, racine: str, motif: re.Pattern[str]) -> list[Fiche]:
+    """Liens de fiches d'une page (résultats de recherche, catégorie), disponibilité lue ensuite.
+
+    Tout lien du site dont l'adresse correspond au motif est retenu, avec son
+    texte le plus long (lien image + lien titre) : marche avec tous les thèmes.
+    Les liens du menu ou des meilleures ventes sont écartés ensuite par le classement.
+    """
+    hote = urlsplit(racine).hostname
     titres: dict[str, str] = {}
     for attributs, contenu in _RE_LIEN.findall(page):
         href = _RE_HREF.search(attributs)
         if not href:
             continue
-        lien = url_absolue(html.unescape(href.group(1)), b.racine)
-        if not lien or urlsplit(lien).hostname != hote or not _RE_URL_FICHE_PRESTA.search(lien):
+        lien = url_absolue(html.unescape(href.group(1)), racine)
+        if not lien or urlsplit(lien).hostname != hote:
             continue
         lien = lien.split("#")[0].split("?")[0]
-        texte = html.unescape(re.sub(r"<[^>]+>", " ", contenu))
+        if not motif.search(urlsplit(lien).path):
+            continue
+        texte = _RE_PARASITES.sub(" ", html.unescape(re.sub(r"<[^>]+>", " ", contenu)))
         title = _RE_TITLE.search(attributs)
         texte = " ".join((texte if texte.strip() else html.unescape(title.group(1)) if title else "").split())
         if len(texte) > len(titres.get(lien, "")):
@@ -357,7 +399,20 @@ def _presta_html(b: Boutique, url: str) -> list[Fiche]:
     ]
 
 
-def _presta_fiche_page(url: str, titre: str) -> Fiche:
+def _html_page(b: Boutique, url: str) -> list[Fiche]:
+    """Plateforme html : page de recherche ou de catégorie d'une enseigne."""
+    page = telecharger(url, accept=ACCEPT_HTML, cadence="hote").texte()
+    assert b.motif_fiche is not None
+    fiches = liens_fiches(page, b.racine, b.motif_fiche)
+    if not fiches:
+        raison = page_anti_robot(page, texte_visible(page))
+        if raison:
+            raise ErreurVerification(raison)
+    return fiches
+
+
+def _lire_fiche(url: str, titre: str) -> Fiche:
+    """Une fiche lue seule : données PrestaShop si présentes, sinon lecture « texte » (schema.org…)."""
     page = telecharger_page(url)
     try:
         r = lire_page_prestashop(page)
@@ -390,7 +445,7 @@ def detecter_plateforme(b: Boutique) -> str:
             essai()
             return nom
         except ErreurVerification:
-            b.api, b.presta_html = None, False
+            b.api, b.fiche_par_fiche = None, False
     raise ErreurVerification("plateforme non reconnue (ni Shopify, ni WooCommerce, ni PrestaShop) : à mettre dans produits.json")
 
 
@@ -430,6 +485,11 @@ def analyser(b: Boutique, collection: Collection, langues: frozenset[str], decou
 
     def lire(source: str) -> list[Fiche]:
         genre, _, valeur = source.partition(":")
+        if b.detectee == "html":
+            if genre == "page":
+                return _html_page(b, valeur)
+            assert b.recherche_url is not None
+            return _html_page(b, b.recherche_url.replace("{q}", quote(valeur)))
         if b.detectee == "shopify":
             return _shopify_source(b, source, filtre_variante)
         if b.detectee == "woocommerce":
@@ -453,6 +513,7 @@ def analyser(b: Boutique, collection: Collection, langues: frozenset[str], decou
             analyse.requetes += 1
             try:
                 b.detectee = b.plateforme if b.plateforme != "auto" else detecter_plateforme(b)
+                b.fiche_par_fiche = b.fiche_par_fiche or b.detectee == "html"
             except ErreurVerification:
                 b.derniere_decouverte = time.monotonic()
                 raise
@@ -473,12 +534,15 @@ def analyser(b: Boutique, collection: Collection, langues: frozenset[str], decou
             termes = b.recherches if b.recherches is not None else collection.recherches
             if b.detectee == "shopify" and sources and b.recherches is None:
                 termes = termes[:RECHERCHES_AVEC_CATEGORIE]
+            if b.detectee == "html":
+                sources += [f"page:{u}" for u in b.pages]
+                termes = (b.recherches if b.recherches is not None else RECHERCHES_ENSEIGNE) if b.recherche_url else []
             sources += [f"recherche:{t}" for t in termes]
-        elif b.detectee in ("shopify", "prestashop") and not b.presta_html:
+        elif b.detectee in ("shopify", "prestashop") and not b.fiche_par_fiche:
             sources = couverture(b.sources)
 
         for i, source in enumerate(sources):
-            if decouvrir and i and source.startswith("recherche:") and ESPACEMENT_S.get(b.detectee or "", 0.5):
+            if decouvrir and i and not source.startswith("categorie:") and ESPACEMENT_S.get(b.detectee or "", 0.5):
                 _attendre(ESPACEMENT_S.get(b.detectee or "", 0.5))
             analyse.requetes += 1
             try:
@@ -514,22 +578,32 @@ def analyser(b: Boutique, collection: Collection, langues: frozenset[str], decou
         analyse.erreurs.append(f"erreur inattendue {type(err).__name__} : {err}")
 
     # PrestaShop sans recherche JSON : la disponibilité se lit sur chaque fiche.
-    if b.presta_html:
+    if b.fiche_par_fiche:
         a_lire = {f.cle: f for f in fiches.values() if f.detail == "à vérifier"}
-        if not decouvrir:
-            a_lire.update({cle: Fiche(cle=cle, url=url, titre="", dispo=False, ref=url) for cle, url in b.refs.items()})
-        for cle, f in list(a_lire.items())[:MAX_FICHES_PAGE]:
+        for cle, f in list(a_lire.items()):
             if decouvrir and collection.classer(f.titre, exiger_marqueur=True) is None:
                 fiches.pop(cle, None)
                 analyse.autres.append(f)
-                continue
+                del a_lire[cle]
+        if not decouvrir:
+            # Fiches déjà retenues, lues à tour de rôle s'il y en a plus de MAX_FICHES_PAGE.
+            connues = list(b.refs.items())
+            debut = b.rotation % len(connues) if connues else 0
+            tour = (connues[debut:] + connues[:debut])[:MAX_FICHES_PAGE]
+            b.rotation += MAX_FICHES_PAGE
+            a_lire.update({cle: Fiche(cle=cle, url=url, titre="", dispo=False, ref=url) for cle, url in tour})
+        for cle, f in list(a_lire.items())[:MAX_FICHES_PAGE]:
             analyse.requetes += 1
             try:
-                lue = _presta_fiche_page(f.url, f.titre)
+                lue = _lire_fiche(f.url, f.titre)
             except ErreurVerification as err:
                 analyse.erreurs.append(f"{f.url} : {err}")
                 fiches.pop(cle, None)
+                if en_pause(f.url):
+                    break
                 continue
+            if f.titre and collection.classer(lue.titre, exiger_marqueur=True) is None:
+                lue.titre = f.titre  # titre de la page peu parlant (« Coffret premium ») : celui du lien
             lue.dans_categorie = not decouvrir  # déjà retenue lors de la découverte
             fiches[cle] = lue
 
