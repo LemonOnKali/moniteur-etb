@@ -103,6 +103,24 @@
     "note": "Lu via schema.org (OutOfStock / InStock). Fonctionne depuis une box, pas depuis GitHub."
   },
   {
+    "boutique": "Carrefour",
+    "nom": "Collection Ultra-Premium Journée (Mentali) 30 ans",
+    "item": "upc-journee",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-collection-ultra-premium-30e-anniversaire-mentali-pokemon-0196214155336",
+    "type": "texte",
+    "a_venir": true,
+    "note": "Adresse construite avec l'EAN : la recherche Carrefour (boutiques-pc.json) prend le relais si elle diffère."
+  },
+  {
+    "boutique": "Carrefour",
+    "nom": "Collection Ultra-Premium Soirée (Noctali) 30 ans",
+    "item": "upc-soiree",
+    "url": "https://www.carrefour.fr/p/coffret-pokemon-collection-ultra-premium-30e-anniversaire-noctali-pokemon-0196214155398",
+    "type": "texte",
+    "a_venir": true,
+    "note": "Adresse construite avec l'EAN : la recherche Carrefour (boutiques-pc.json) prend le relais si elle diffère."
+  },
+  {
     "boutique": "Smyths Toys",
     "nom": "Coffret Dresseur d'Élite 30 ans",
     "url": "https://www.smythstoys.com/fr/fr-fr/jouets/jeux-de-societe-et-puzzles/cartes-a-collectionner/cartes-pokemon/pokemon-coffret-dresseur-delite-30eme-anniversaire/p/261821",

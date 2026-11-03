@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
-from .http import ErreurVerification, en_pause, telecharger_json, telecharger_page
+from .http import ErreurHTTP, ErreurVerification, en_pause, telecharger_json, telecharger_page
 from .modeles import Resultat
 from .texte import lire_prix, normaliser, texte_visible
 
@@ -44,6 +44,7 @@ class Produit:
     prix_max: float | None = None  # au-delà, on ne signale pas (surcharge l'item et PRIX_MAX)
     mots_explicites: bool = False  # mots_rupture / mots_stock fournis dans produits.json
     actif: bool = True
+    a_venir: bool = False  # fiche pas encore en ligne (404) : « pas encore en ligne », pas une erreur
     type_detecte: str | None = None  # renseigné en mode "auto"
 
     @classmethod
@@ -94,6 +95,7 @@ class Produit:
             regex_rupture=str(regex_rupture) if regex_rupture else None,
             mots_explicites=bool(brut.get("mots_rupture") or brut.get("mots_stock")),
             actif=bool(brut.get("actif", True)),
+            a_venir=bool(brut.get("a_venir", False)),
         )
 
 
@@ -523,7 +525,14 @@ def verifier(produit: Produit) -> Resultat:
     """Ne lève jamais : toute erreur devient un Resultat(dispo=None)."""
     try:
         return VERIFICATEURS[produit.type](produit)
+    except ErreurHTTP as err:
+        if produit.a_venir and err.code in (404, 410):
+            # Produit annoncé dont l'enseigne n'a pas encore publié la fiche : on attend.
+            return Resultat(dispo=False, detail="fiche pas encore en ligne", source=produit.type)
+        return Resultat(dispo=None, detail=str(err), source=produit.type)
     except ErreurVerification as err:
+        if produit.a_venir and "HTTP 404" in str(err):  # mode auto : erreurs regroupées
+            return Resultat(dispo=False, detail="fiche pas encore en ligne", source=produit.type)
         return Resultat(dispo=None, detail=str(err), source=produit.type)
     except Exception as err:  # garde-fou : un bug sur un produit ne stoppe pas les autres
         return Resultat(dispo=None, detail=f"erreur inattendue {type(err).__name__} : {err}", source=produit.type)

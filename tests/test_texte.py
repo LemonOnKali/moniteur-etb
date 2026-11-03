@@ -43,6 +43,21 @@ class TestPrestashop16(unittest.TestCase):
         self.assertEqual((r.dispo, r.quantite), (True, 4))
 
 
+class TestFicheAVenir(unittest.TestCase):
+    def test_404_attendu(self):
+        from unittest import mock
+
+        from moniteur_etb.http import ErreurHTTP
+        from moniteur_etb.pages import Produit, verifier
+
+        p = Produit(nom="UPC Journée 30 ans", url="https://www.e.leclerc/fp/upc-0196214155336", type="texte", a_venir=True)
+        with mock.patch("moniteur_etb.pages.telecharger_page", side_effect=ErreurHTTP(404, "Not Found")):
+            r = verifier(p)
+            self.assertEqual((r.dispo, r.detail), (False, "fiche pas encore en ligne"))
+            p.a_venir = False
+            self.assertIsNone(verifier(p).dispo)  # sans a_venir, un 404 reste une erreur
+
+
 class TestReglages(unittest.TestCase):
     def test_aucune_boutique(self):
         import os

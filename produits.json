@@ -66,6 +66,24 @@
     "type": "auto"
   },
   {
+    "boutique": "E.Leclerc",
+    "nom": "Collection Ultra-Premium Journée (Mentali) 30 ans",
+    "item": "upc-journee",
+    "url": "https://www.e.leclerc/fp/pokemon-30a-collection-ultra-premium-journee-0196214155336",
+    "type": "texte",
+    "a_venir": true,
+    "note": "Leclerc retrouve la fiche par son code-barres (EAN) : l'adresse marchera dès sa mise en ligne."
+  },
+  {
+    "boutique": "E.Leclerc",
+    "nom": "Collection Ultra-Premium Soirée (Noctali) 30 ans",
+    "item": "upc-soiree",
+    "url": "https://www.e.leclerc/fp/pokemon-30a-collection-ultra-premium-soiree-0196214155398",
+    "type": "texte",
+    "a_venir": true,
+    "note": "Leclerc retrouve la fiche par son code-barres (EAN) : l'adresse marchera dès sa mise en ligne."
+  },
+  {
     "boutique": "Philibert",
     "nom": "Coffret Dresseur d'Élite 30 ans",
     "url": "https://www.philibertnet.com/fr/pokemon/181759-pokemon-30-ans-coffret-dresseur-d-elite-2100001405977.html",
