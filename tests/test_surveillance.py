@@ -159,6 +159,31 @@ class TestDecouvertesEtalees(unittest.TestCase):
         self.assertEqual(len(appels), 7)
 
 
+class TestCycleNonBloquant(unittest.TestCase):
+    def test_verification_lente_recoltee_plus_tard(self):
+        import threading
+
+        from moniteur_etb import surveillance as surv
+
+        lente, rapide = Boutique(nom="Lente", url="https://lente.fr"), Boutique(nom="Rapide", url="https://rapide.fr")
+        s = Surveillance(Reglages(), COLLECTION, [], [lente, rapide], FauxDiscord(), {})
+        feu = threading.Event()
+
+        def faux_analyser(b, collection, langues, decouvrir):
+            if b is lente:
+                feu.wait(5)
+            return Analyse(offres=[offre(url=f"{b.url}/products/etb")], autres=[])
+
+        with mock.patch.object(surv, "analyser", faux_analyser), ThreadPoolExecutor(max_workers=4) as ex:
+            offres, _ = s.verifier_tout(ex, attente=0.5)
+            self.assertEqual([o.url for o in offres], ["https://rapide.fr/products/etb"])
+            self.assertEqual(len(s._en_cours), 1)  # la lente continue en arrière-plan
+            feu.set()
+            offres, _ = s.verifier_tout(ex, attente=5)
+        self.assertIn("https://lente.fr/products/etb", [o.url for o in offres])
+        self.assertEqual(s._en_cours, {})
+
+
 class TestFicheMenagee(unittest.TestCase):
     def test_intervalle_produit(self):
         from moniteur_etb.pages import Produit

@@ -58,9 +58,14 @@ Boutiques couvertes aujourd'hui (≈ 250 fiches 30 ans suivies) :
 | Shopify (catalogue entier) | LorenZone, PokeMael, Collect Avenue, Poke-Geek, Hikaru Distribution, Outpost Brussels, TradingCards XXX, VCollect, Cartes-Pokemon.com |
 | WooCommerce (catalogue entier) | Ecardstore, PixelHeart, Guizette Family, GoRetroGaming, PokeShop.cards |
 | PrestaShop (catalogue entier) | Pokezenith, Foxchip, BCD Jeux, Pokesumo, 1001hobbies, Fantastik, Le Monde Imaginaire, Pokémon Carte, Espace Kids |
-| Grandes enseignes (recherche puis fiche par fiche) | E.Leclerc, Auchan, JouéClub, Micromania |
-| Fiches (`produits.json`) | UltraJeux, Au Dé Mon du Jeu, JouéClub, Micromania, Dstrib, Ludocortex, Plaza TCG, Les Gentlemen du Jeu, Blazing Tail, UPC Leclerc |
-| Depuis le PC (`boutiques-pc.json`, `produits-pc.json`) | Carrefour, King Jouet, Cultura (recherche), Amazon (ETB, UPC, Mini Tins), Courses U, MediaMarkt, UPC Carrefour |
+| Grandes enseignes (recherche ou page « 30 ans », puis fiche par fiche) | Auchan, JouéClub, Micromania |
+| Grandes enseignes par code-barres (15 références dont les 2 UPC) | E.Leclerc (`produits.json`), Carrefour (`produits-pc.json`) |
+| Fiches (`produits.json`) | UltraJeux, Au Dé Mon du Jeu, Dstrib, Ludocortex, Plaza TCG, Les Gentlemen du Jeu, Blazing Tail |
+| Depuis le PC (`boutiques-pc.json`, `produits-pc.json`) | Carrefour, King Jouet, Cultura (recherche), Amazon (ETB, UPC, Mini Tins), Courses U, MediaMarkt |
+
+Les UPC (et toute fiche « à venir ») sont suivies avant même leur mise en ligne :
+tant que l'enseigne n'a pas publié la fiche, elle compte comme « pas encore en
+ligne » ; l'alerte part dès qu'elle apparaît en stock.
 
 Hors de portée sans vrai navigateur : Fnac, Cdiscount, Smyths (anti-robot),
 Play-in (stock chargé en JavaScript), Pokémon Center.

@@ -61,7 +61,8 @@
     "type": "texte",
     "a_venir": true,
     "intervalle_secondes": 120,
-    "note": "Leclerc retrouve la fiche par son code-barres (EAN), quel que soit le nom dans l'adresse : 404 = pas encore en ligne."
+    "note": "Leclerc retrouve la fiche par son code-barres (EAN), quel que soit le nom dans l'adresse : 404 = pas encore en ligne. Leclerc limite fortement le débit : une page toutes les 12 s, UPC toutes les 2 min, le reste toutes les 10 min.",
+    "ecart_secondes": 12
   },
   {
     "boutique": "E.Leclerc",
@@ -70,7 +71,8 @@
     "url": "https://www.e.leclerc/fp/pokemon-30a-collection-ultra-premium-soiree-noctali-0196214155398",
     "type": "texte",
     "a_venir": true,
-    "intervalle_secondes": 120
+    "intervalle_secondes": 120,
+    "ecart_secondes": 12
   },
   {
     "boutique": "E.Leclerc",
@@ -79,7 +81,8 @@
     "url": "https://www.e.leclerc/fp/pokemon-30a-coffret-dresseur-d-elite-0196214144835",
     "type": "texte",
     "a_venir": true,
-    "intervalle_secondes": 120
+    "intervalle_secondes": 600,
+    "ecart_secondes": 12
   },
   {
     "boutique": "E.Leclerc",
@@ -88,7 +91,8 @@
     "url": "https://www.e.leclerc/fp/coffret-premium-8-boosters-0196214147430",
     "type": "texte",
     "a_venir": true,
-    "intervalle_secondes": 120
+    "intervalle_secondes": 600,
+    "ecart_secondes": 12
   },
   {
     "boutique": "E.Leclerc",
@@ -97,7 +101,8 @@
     "url": "https://www.e.leclerc/fp/pokemon-30a-bundle-6-boosters-0196214145221",
     "type": "texte",
     "a_venir": true,
-    "intervalle_secondes": 120
+    "intervalle_secondes": 600,
+    "ecart_secondes": 12
   },
   {
     "boutique": "E.Leclerc",
@@ -106,7 +111,8 @@
     "url": "https://www.e.leclerc/fp/pokemon-30a-coffret-nymphali-ex-0196214147102",
     "type": "texte",
     "a_venir": true,
-    "intervalle_secondes": 120
+    "intervalle_secondes": 600,
+    "ecart_secondes": 12
   },
   {
     "boutique": "E.Leclerc",
@@ -115,7 +121,8 @@
     "url": "https://www.e.leclerc/fp/pokemon-30a-coffret-amphinobi-ex-0196214147164",
     "type": "texte",
     "a_venir": true,
-    "intervalle_secondes": 120
+    "intervalle_secondes": 600,
+    "ecart_secondes": 12
   },
   {
     "boutique": "E.Leclerc",
@@ -124,7 +131,8 @@
     "url": "https://www.e.leclerc/fp/pokemon-30a-pokebox-0196214146907",
     "type": "texte",
     "a_venir": true,
-    "intervalle_secondes": 120
+    "intervalle_secondes": 600,
+    "ecart_secondes": 12
   },
   {
     "boutique": "E.Leclerc",
@@ -133,7 +141,8 @@
     "url": "https://www.e.leclerc/fp/pokemon-30a-pokebox-nymphali-ex-0196214146976",
     "type": "texte",
     "a_venir": true,
-    "intervalle_secondes": 120
+    "intervalle_secondes": 600,
+    "ecart_secondes": 12
   },
   {
     "boutique": "E.Leclerc",
@@ -142,7 +151,8 @@
     "url": "https://www.e.leclerc/fp/pokemon-30a-coffret-poster-0196214147225",
     "type": "texte",
     "a_venir": true,
-    "intervalle_secondes": 120
+    "intervalle_secondes": 600,
+    "ecart_secondes": 12
   },
   {
     "boutique": "E.Leclerc",
@@ -151,7 +161,8 @@
     "url": "https://www.e.leclerc/fp/pokemon-30a-collection-classeur-0196214145153",
     "type": "texte",
     "a_venir": true,
-    "intervalle_secondes": 120
+    "intervalle_secondes": 600,
+    "ecart_secondes": 12
   },
   {
     "boutique": "E.Leclerc",
@@ -160,7 +171,8 @@
     "url": "https://www.e.leclerc/fp/pokemon-30a-mini-tin-modele-aleatoire-0196214146297",
     "type": "texte",
     "a_venir": true,
-    "intervalle_secondes": 120
+    "intervalle_secondes": 600,
+    "ecart_secondes": 12
   },
   {
     "boutique": "E.Leclerc",
@@ -169,7 +181,8 @@
     "url": "https://www.e.leclerc/fp/pokemon-30a-tripack-collection-autocollant-0196214144972",
     "type": "texte",
     "a_venir": true,
-    "intervalle_secondes": 120
+    "intervalle_secondes": 600,
+    "ecart_secondes": 12
   },
   {
     "boutique": "E.Leclerc",
@@ -178,16 +191,17 @@
     "url": "https://www.e.leclerc/fp/pokemon-30a-pack-2-boosters-0196214152311",
     "type": "texte",
     "a_venir": true,
-    "intervalle_secondes": 120
+    "intervalle_secondes": 600,
+    "ecart_secondes": 12
   },
   {
     "boutique": "E.Leclerc",
     "nom": "Coffret Journée Pokémon 2026 (30 ans)",
     "item": "pokemon-day",
-    "url": "https://www.e.leclerc/fp/pokemon-coffret-journee-pokemon-2026-0196214139718",
+    "url": "https://www.e.leclerc/fp/pokemon-coffret-pokemon-day-26-3b-carte-exclu-0196214139718",
     "type": "texte",
-    "a_venir": true,
-    "intervalle_secondes": 120
+    "intervalle_secondes": 600,
+    "ecart_secondes": 12
   },
   {
     "boutique": "JouéClub",

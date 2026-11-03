@@ -46,6 +46,7 @@ class Produit:
     mots_explicites: bool = False  # mots_rupture / mots_stock fournis dans produits.json
     actif: bool = True
     a_venir: bool = False  # fiche pas encore en ligne (404) : « pas encore en ligne », pas une erreur
+    ecart: float | None = None  # secondes entre deux pages de ce site (grande enseigne qui limite le débit)
     intervalle: float | None = None  # secondes entre deux lectures (grandes enseignes à ménager)
     derniere_verification: float | None = None
     type_detecte: str | None = None  # renseigné en mode "auto"
@@ -79,11 +80,15 @@ class Produit:
                     raise ValueError(f"produit '{nom}' : '{nom_champ}' invalide ({err})")
         prix_max = brut.get("prix_max")
         intervalle = brut.get("intervalle_secondes")
+        ecart = brut.get("ecart_secondes")
         try:
             prix_max = float(prix_max) if prix_max is not None else None
             intervalle = float(intervalle) if intervalle is not None else None
+            ecart = float(ecart) if ecart is not None else None
         except (TypeError, ValueError):
-            raise ValueError(f"produit '{nom}' : 'prix_max' et 'intervalle_secondes' doivent être des nombres") from None
+            raise ValueError(
+                f"produit '{nom}' : 'prix_max', 'intervalle_secondes' et 'ecart_secondes' doivent être des nombres"
+            ) from None
         variante = brut.get("variante")
         return cls(
             nom=nom,
@@ -101,6 +106,7 @@ class Produit:
             actif=bool(brut.get("actif", True)),
             a_venir=bool(brut.get("a_venir", False)),
             intervalle=intervalle,
+            ecart=ecart,
         )
 
     def verification_due(self) -> bool:
@@ -481,12 +487,13 @@ def lire_page_texte(produit: Produit, page: str) -> Resultat:
     trouves = [m for m in produit.mots_rupture if normaliser(m) in texte]
     if trouves:
         return resultat(False, f"mot de rupture : « {trouves[0]} »")
-    if len(texte) < 1500:
-        # Aucun signal positif et presque pas de texte : page rendue en JavaScript.
-        # On refuse de conclure « en stock » sur une absence de preuve.
+    if len(texte) < 1500 or not produit.mots_explicites:
+        # Aucun signal positif : on refuse de conclure « en stock » sur une absence
+        # de preuve (page JavaScript, page de défi, fiche d'une autre forme…). Seuls
+        # des mots de rupture choisis pour cette enseigne autorisent ce raisonnement.
         raise ErreurVerification(
-            f"page rendue en JavaScript ({len(texte)} caractères visibles) : impossible de conclure, "
-            "utilise regex_stock / mots_stock"
+            f"aucune donnée de disponibilité lisible ({len(texte)} caractères visibles) : "
+            "impossible de conclure, règle regex_stock / mots_stock pour cette fiche"
         )
     return resultat(True, "aucun mot de rupture")
 

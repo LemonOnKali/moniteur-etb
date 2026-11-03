@@ -95,7 +95,8 @@
     "type": "texte",
     "intervalle_secondes": 120,
     "a_venir": true,
-    "note": "Lu via schema.org. Carrefour bloque GitHub : depuis le PC. Adresses sans nom exact construites avec l'EAN (a_venir) ; la recherche Carrefour (boutiques-pc.json) prend le relais."
+    "note": "Lu via schema.org. Carrefour bloque GitHub : depuis le PC. Adresses sans nom exact construites avec l'EAN (a_venir) ; la recherche Carrefour (boutiques-pc.json) prend le relais.",
+    "ecart_secondes": 8
   },
   {
     "boutique": "Carrefour",
@@ -104,7 +105,8 @@
     "url": "https://www.carrefour.fr/p/coffret-pokemon-collection-ultra-premium-soiree-noctali-30e-anniversaire-pokemon-0196214155398",
     "type": "texte",
     "intervalle_secondes": 120,
-    "a_venir": true
+    "a_venir": true,
+    "ecart_secondes": 8
   },
   {
     "boutique": "Carrefour",
@@ -112,7 +114,8 @@
     "item": "etb",
     "url": "https://www.carrefour.fr/p/cartes-a-jouer-et-a-collectionner-coffret-dresseur-d-elite-30e-anniversaire-pokemon-0196214144835",
     "type": "texte",
-    "intervalle_secondes": 120
+    "intervalle_secondes": 600,
+    "ecart_secondes": 8
   },
   {
     "boutique": "Carrefour",
@@ -120,8 +123,9 @@
     "item": "metamorph-premium",
     "url": "https://www.carrefour.fr/p/coffret-pokemon-coffret-premium-8-boosters-30e-anniversaire-pokemon-0196214147430",
     "type": "texte",
-    "intervalle_secondes": 120,
-    "a_venir": true
+    "intervalle_secondes": 600,
+    "a_venir": true,
+    "ecart_secondes": 8
   },
   {
     "boutique": "Carrefour",
@@ -129,8 +133,9 @@
     "item": "bundle",
     "url": "https://www.carrefour.fr/p/coffret-pokemon-bundle-6-boosters-30e-anniversaire-pokemon-0196214145221",
     "type": "texte",
-    "intervalle_secondes": 120,
-    "a_venir": true
+    "intervalle_secondes": 600,
+    "a_venir": true,
+    "ecart_secondes": 8
   },
   {
     "boutique": "Carrefour",
@@ -138,7 +143,8 @@
     "item": "coffret-ex",
     "url": "https://www.carrefour.fr/p/coffret-pokemon-nymphali-ex-30e-anniversaire-pokemon-0196214147102",
     "type": "texte",
-    "intervalle_secondes": 120
+    "intervalle_secondes": 600,
+    "ecart_secondes": 8
   },
   {
     "boutique": "Carrefour",
@@ -146,7 +152,8 @@
     "item": "coffret-ex",
     "url": "https://www.carrefour.fr/p/coffret-pokemon-amphinobi-ex-30e-anniversaire-pokemon-0196214147164",
     "type": "texte",
-    "intervalle_secondes": 120
+    "intervalle_secondes": 600,
+    "ecart_secondes": 8
   },
   {
     "boutique": "Carrefour",
@@ -154,8 +161,9 @@
     "item": "pokebox",
     "url": "https://www.carrefour.fr/p/coffret-pokemon-pokebox-30e-anniversaire-pokemon-0196214146907",
     "type": "texte",
-    "intervalle_secondes": 120,
-    "a_venir": true
+    "intervalle_secondes": 600,
+    "a_venir": true,
+    "ecart_secondes": 8
   },
   {
     "boutique": "Carrefour",
@@ -163,8 +171,9 @@
     "item": "pokebox",
     "url": "https://www.carrefour.fr/p/coffret-pokemon-pokebox-nymphali-ex-30e-anniversaire-pokemon-0196214146976",
     "type": "texte",
-    "intervalle_secondes": 120,
-    "a_venir": true
+    "intervalle_secondes": 600,
+    "a_venir": true,
+    "ecart_secondes": 8
   },
   {
     "boutique": "Carrefour",
@@ -172,7 +181,8 @@
     "item": "poster",
     "url": "https://www.carrefour.fr/p/coffret-pokemon-collection-poster-30e-anniversaire-pokemon-0196214147225",
     "type": "texte",
-    "intervalle_secondes": 120
+    "intervalle_secondes": 600,
+    "ecart_secondes": 8
   },
   {
     "boutique": "Carrefour",
@@ -180,7 +190,8 @@
     "item": "classeur",
     "url": "https://www.carrefour.fr/p/coffret-pokemon-collection-classeur-30e-anniversaire-pokemon-0196214145153",
     "type": "texte",
-    "intervalle_secondes": 120
+    "intervalle_secondes": 600,
+    "ecart_secondes": 8
   },
   {
     "boutique": "Carrefour",
@@ -188,8 +199,9 @@
     "item": "mini-tin",
     "url": "https://www.carrefour.fr/p/coffret-pokemon-mini-tin-modele-aleatoire-30e-anniversaire-pokemon-0196214146297",
     "type": "texte",
-    "intervalle_secondes": 120,
-    "a_venir": true
+    "intervalle_secondes": 600,
+    "a_venir": true,
+    "ecart_secondes": 8
   },
   {
     "boutique": "Carrefour",
@@ -197,7 +209,8 @@
     "item": "autocollants",
     "url": "https://www.carrefour.fr/p/tripack-pokemon-collection-autocollant-reajustable-30th-celebration-0196214144972",
     "type": "texte",
-    "intervalle_secondes": 120
+    "intervalle_secondes": 600,
+    "ecart_secondes": 8
   },
   {
     "boutique": "Carrefour",
@@ -205,7 +218,8 @@
     "item": "duopack",
     "url": "https://www.carrefour.fr/p/pack-de-2-boosters-pokemon-30e-anniversaire-pokemon-0196214152311",
     "type": "texte",
-    "intervalle_secondes": 120
+    "intervalle_secondes": 600,
+    "ecart_secondes": 8
   },
   {
     "boutique": "Carrefour",
@@ -213,7 +227,8 @@
     "item": "pokemon-day",
     "url": "https://www.carrefour.fr/p/coffret-pokemon-pikachu-3-boosters-collection-journee-pokemon-2026-cartes-a-collectionner-francaise-3667036159231",
     "type": "texte",
-    "intervalle_secondes": 120
+    "intervalle_secondes": 600,
+    "ecart_secondes": 8
   },
   {
     "boutique": "Fnac",

@@ -7,15 +7,17 @@ import json
 import sys
 import time
 from collections import Counter
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import Future, ThreadPoolExecutor, wait
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
+from urllib.parse import urlsplit
 
 from . import etat as etat_mod
 from .boutiques import Analyse, Boutique, analyser
 from .collection import Collection
 from .discord import BLEU, ORANGE, Discord, embed_offre, embed_rupture, resume_alertes
+from .http import regler_ecart
 from .modeles import Offre, cle_url
 from .pages import Produit, verifier
 from .reglages import Reglages
@@ -70,6 +72,8 @@ def charger_produits(chemin: str) -> list[Produit]:
             log(f"⚠️  Produit ignoré — URL en double : {produit.url}")
             continue
         vues.add(cle_url(produit.url))
+        if produit.ecart:
+            regler_ecart(urlsplit(produit.url).hostname or "", produit.ecart)
         produits.append(produit)
     return produits
 
@@ -91,6 +95,8 @@ def charger_boutiques(chemin: str) -> list[Boutique]:
             log(f"⚠️  Boutique ignorée — URL en double : {boutique.url}")
             continue
         vues.add(boutique.url)
+        if boutique.ecart:
+            regler_ecart(urlsplit(boutique.url).hostname or "", boutique.ecart)
         boutiques.append(boutique)
     return boutiques
 
@@ -130,6 +136,9 @@ class Surveillance:
         self.etat = etat
         self.cycle_n = 0
         self._erreurs_vues: dict[str, str] = {}
+        # Vérifications encore en cours d'un cycle à l'autre (grande enseigne lente) :
+        # elles ne retardent pas les boutiques rapides, leur résultat est pris plus tard.
+        self._en_cours: dict[Future[Any], Boutique | Produit] = {}
 
     # -- Vérifications ------------------------------------------------------ #
 
@@ -155,29 +164,39 @@ class Surveillance:
             erreur=r.detail if r.dispo is None else "",
         )
 
-    def verifier_tout(self, executeur: ThreadPoolExecutor, forcer_decouverte: bool = False) -> tuple[list[Offre], Bilan]:
+    def verifier_tout(self, executeur: ThreadPoolExecutor, forcer_decouverte: bool = False,
+                      attente: float | None = None) -> tuple[list[Offre], Bilan]:
+        """Lance les vérifications dues et récolte celles terminées.
+
+        `attente` (secondes) : au-delà, les vérifications pas encore finies continuent
+        en arrière-plan et seront récoltées au cycle suivant. None = tout attendre.
+        """
         bilan = Bilan()
         intervalle_decouverte = self.reglages.decouverte_minutes * 60
-        futurs: dict[Any, Boutique | Produit] = {}
+        occupees = {id(o) for o in self._en_cours.values()}
+        futurs = self._en_cours
         # Découvertes étalées : quelques boutiques par cycle (les plus anciennes d'abord)
         # plutôt que toutes en même temps toutes les 15 min.
         dues = sorted((b for b in self.boutiques if b.decouverte_due(intervalle_decouverte)),
                       key=lambda b: b.derniere_decouverte or 0.0)
         a_decouvrir = {id(b) for b in (dues if forcer_decouverte else dues[:MAX_DECOUVERTES_PAR_CYCLE])}
         for b in self.boutiques:
+            if id(b) in occupees:
+                continue
             decouvrir = b.derniere_decouverte is None or id(b) in a_decouvrir
             if not decouvrir and not b.verification_due():
                 continue
             futurs[executeur.submit(analyser, b, self.collection, self.reglages.langues, decouvrir)] = b
         for p in self.produits:
-            if not p.verification_due():
+            if id(p) in occupees or not p.verification_due():
                 continue
             p.derniere_verification = time.monotonic()
             futurs[executeur.submit(self.offre_produit, p)] = p
 
+        finis, _ = wait(list(futurs), timeout=attente)
         offres: dict[str, Offre] = {}
-        for futur in as_completed(futurs):
-            origine = futurs[futur]
+        for futur in finis:
+            origine = futurs.pop(futur)
             if isinstance(origine, Boutique):
                 analyse: Analyse = futur.result()
                 bilan.requetes += analyse.requetes
@@ -209,7 +228,10 @@ class Surveillance:
     def cycle(self, executeur: ThreadPoolExecutor, forcer_decouverte: bool = False) -> Bilan:
         self.cycle_n += 1
         debut = time.monotonic()
-        offres, bilan = self.verifier_tout(executeur, forcer_decouverte)
+        # Premier cycle : on attend tout (état initial et résumé complets) ; ensuite les
+        # vérifications lentes ne retiennent pas le cycle au-delà de son intervalle.
+        attente = None if self.cycle_n == 1 else max(5.0, self.reglages.intervalle_secondes - 5)
+        offres, bilan = self.verifier_tout(executeur, forcer_decouverte, attente)
         bilan.offres = offres
         horodatage = maintenant()
         premier = self.cycle_n == 1

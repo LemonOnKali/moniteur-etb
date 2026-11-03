@@ -150,7 +150,9 @@ def diagnostiquer_produit(produit: Produit, offre: Offre) -> None:
         lignes.append(f"    détail : {offre.detail}")
     if offre.trop_chere:
         lignes.append(f"    💸 au-dessus du plafond {formater_prix(offre.prix_max)}")
-    if offre.source in ("texte", "auto") or offre.dispo is None:
+    # Seconde lecture (extraits pour régler la fiche) seulement si la détection est faible ou
+    # en échec : une grande enseigne qui limite son débit n'est pas sollicitée deux fois.
+    if offre.dispo is None or offre.detail.startswith(("mot", "aucun")):
         try:
             page = telecharger_page(produit.url)
         except ErreurVerification as err:

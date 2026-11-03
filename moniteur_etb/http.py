@@ -140,6 +140,14 @@ _CADENCES_HOTES: dict[str, Cadence] = {}
 _VERROU_HOTES = threading.Lock()
 
 
+def regler_ecart(hote: str, secondes: float) -> None:
+    """Écart minimal entre deux pages d'un site (champ « ecart_secondes » de la configuration)."""
+    with _VERROU_HOTES:
+        actuelle = _CADENCES_HOTES.get(hote)
+        if actuelle is None or actuelle.minimum < secondes:
+            _CADENCES_HOTES[hote] = Cadence(intervalle=secondes, minimum=secondes, maximum=max(10.0, secondes * 4))
+
+
 def _file(cadence: str | None, hote: str) -> Cadence | None:
     """File d'attente d'un groupe (« shopify ») ou propre au site (« hote »)."""
     if cadence != "hote":
@@ -279,7 +287,7 @@ def redirection_suspecte(url_demandee: str, url_finale: str) -> bool:
     chemin_apres = urlsplit(url_finale).path.rstrip("/")
     if chemin_avant == chemin_apres:
         return False
-    identifiants = re.findall(r"\d{4,}", chemin_avant)
+    identifiants = re.findall(r"\d{5,}", chemin_avant)  # EAN, références… (pas « 2026 » dans un nom)
     if identifiants:
         return not all(i in chemin_apres for i in identifiants)
     return not chemin_apres.startswith(chemin_avant) and not chemin_avant.startswith(chemin_apres)

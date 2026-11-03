@@ -58,6 +58,28 @@ class TestFicheAVenir(unittest.TestCase):
             self.assertIsNone(verifier(p).dispo)  # sans a_venir, un 404 reste une erreur
 
 
+class TestPasDePreuvePasDAlerte(unittest.TestCase):
+    def test_page_sans_donnees(self):
+        from moniteur_etb.http import ErreurVerification
+        from moniteur_etb.pages import Produit, lire_page_texte
+
+        page = "<html><title>Coffret</title>" + "<p>Un très beau coffret Pokémon.</p>" * 200 + "</html>"
+        with self.assertRaises(ErreurVerification):
+            lire_page_texte(Produit(nom="Coffret 30 ans", url="https://e.fr/fp/x-0196214147102"), page)
+        # Avec des mots de rupture choisis pour l'enseigne, l'absence de rupture vaut « en stock ».
+        p = Produit.depuis_dict({"nom": "Coffret", "url": "https://u.fr/p/1", "mots_rupture": ["bientôt disponible"]}, 0)
+        self.assertTrue(lire_page_texte(p, page).dispo)
+
+    def test_redirection_vers_le_nom_canonique(self):
+        from moniteur_etb.http import redirection_suspecte
+
+        self.assertFalse(redirection_suspecte(
+            "https://www.e.leclerc/fp/pokemon-coffret-journee-pokemon-2026-0196214139718",
+            "https://www.e.leclerc/fp/pokemon-coffret-pokemon-day-26-3b-carte-exclu-0196214139718"))
+        self.assertTrue(redirection_suspecte(
+            "https://www.joueclub.fr/pokemon/coffret-0196214144835.html", "https://www.joueclub.fr/nos-heros/pokemon.html"))
+
+
 class TestReglages(unittest.TestCase):
     def test_aucune_boutique(self):
         import os

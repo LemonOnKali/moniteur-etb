@@ -70,6 +70,7 @@ class Boutique:
     recherche_url: str | None = None  # html : page de recherche, {q} = terme
     pages: list[str] = field(default_factory=list)  # html : pages à parcourir (catégorie « 30 ans »…)
     motif_fiche: re.Pattern[str] | None = None  # html : expression des adresses de fiche
+    ecart: float | None = None  # secondes entre deux pages de ce site (enseigne qui limite le débit)
     actif: bool = True
 
     # État d'exécution (non configurable)
@@ -105,8 +106,11 @@ class Boutique:
         try:
             prix_max = float(brut["prix_max"]) if brut.get("prix_max") is not None else None
             intervalle = float(brut["intervalle_secondes"]) if brut.get("intervalle_secondes") is not None else None
+            ecart = float(brut["ecart_secondes"]) if brut.get("ecart_secondes") is not None else None
         except (TypeError, ValueError):
-            raise ValueError(f"boutique '{nom}' : 'prix_max' et 'intervalle_secondes' doivent être des nombres") from None
+            raise ValueError(
+                f"boutique '{nom}' : 'prix_max', 'intervalle_secondes' et 'ecart_secondes' doivent être des nombres"
+            ) from None
         recherche_url = str(brut.get("recherche_url") or "").strip() or None
         pages = brut.get("pages") or []
         motif = brut.get("motif_fiche")
@@ -132,6 +136,7 @@ class Boutique:
             recherche_url=recherche_url,
             pages=[str(u).strip() for u in pages if str(u).strip()],
             motif_fiche=motif_fiche,
+            ecart=ecart,
             actif=bool(brut.get("actif", True)),
         )
 
