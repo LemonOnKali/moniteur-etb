@@ -139,6 +139,49 @@ class TestFileParSite(unittest.TestCase):
         self.assertIsNone(http._file(None, "x.fr"))
 
 
+class TestFileEtPause(unittest.TestCase):
+    def test_requete_en_file_abandonne_si_le_site_bloque(self):
+        from moniteur_etb import http
+
+        http.PAUSES.vider()
+        http.regler_ecart("bloque.test", 0.01)
+        http.PAUSES.echec("bloque.test")
+        with mock.patch("moniteur_etb.http.urlopen") as ouvrir, self.assertRaises(http.ErreurVerification):
+            http.telecharger("https://bloque.test/page", cadence="hote")
+        ouvrir.assert_not_called()
+        http.PAUSES.vider()
+
+    def test_site_injoignable_mis_en_pause_des_le_premier_echec(self):
+        """Une enseigne à file propre qui ne répond pas est mise en pause tout de
+        suite : pas de 2e essai qui repasserait derrière les requêtes en attente."""
+        from urllib.error import URLError
+
+        from moniteur_etb import http
+
+        http.PAUSES.vider()
+        http.regler_ecart("injoignable.test", 0.01)
+        with mock.patch("moniteur_etb.http.urlopen", side_effect=URLError("refusé")) as ouvrir:
+            with self.assertRaises(http.ErreurVerification):
+                http.telecharger("https://injoignable.test/a", cadence="hote")
+            self.assertEqual(ouvrir.call_count, 1)
+            self.assertGreater(http.PAUSES.restant("injoignable.test"), 0)
+        http.PAUSES.vider()
+
+    def test_attente_interrompue_quand_le_site_passe_en_pause(self):
+        import threading
+
+        from moniteur_etb import http
+
+        http.PAUSES.vider()
+        c = http.Cadence(intervalle=30.0, minimum=30.0, maximum=30.0)
+        self.assertTrue(c.attendre("lent.test"))  # 1re requête : tout de suite
+        threading.Timer(0.2, lambda: http.PAUSES.echec("lent.test")).start()
+        debut = time.monotonic()
+        self.assertFalse(c.attendre("lent.test"))  # la 2e aurait attendu 30 s
+        self.assertLess(time.monotonic() - debut, 2.0)
+        http.PAUSES.vider()
+
+
 class TestDecouvertesEtalees(unittest.TestCase):
     def test_trois_par_cycle(self):
         from moniteur_etb import surveillance as surv
@@ -182,6 +225,38 @@ class TestCycleNonBloquant(unittest.TestCase):
             offres, _ = s.verifier_tout(ex, attente=5)
         self.assertIn("https://lente.fr/products/etb", [o.url for o in offres])
         self.assertEqual(s._en_cours, {})
+        self.assertTrue(s.tour_complet)
+
+    def test_premier_cycle_borne_et_fiche_tardive_pas_nouvelle(self):
+        import threading
+
+        from moniteur_etb import surveillance as surv
+
+        lente, rapide = Boutique(nom="Lente", url="https://lente.fr"), Boutique(nom="Rapide", url="https://rapide.fr")
+        discord = FauxDiscord()
+        s = Surveillance(Reglages(), COLLECTION, [], [lente, rapide], discord, {})
+        feu = threading.Event()
+
+        def faux_analyser(b, collection, langues, decouvrir):
+            if b is lente:
+                feu.wait(5)
+            return Analyse(offres=[offre(url=f"{b.url}/products/etb", dispo=True)], autres=[])
+
+        with mock.patch.object(surv, "analyser", faux_analyser), \
+                mock.patch.object(surv, "PREMIER_CYCLE_MAX_S", 0.3), ThreadPoolExecutor(max_workers=4) as ex:
+            debut = time.monotonic()
+            s.cycle(ex)
+            self.assertLess(time.monotonic() - debut, 3)  # n'attend pas la boutique lente
+            self.assertFalse(s.tour_complet)
+            feu.set()
+            time.sleep(0.1)
+            s.cycle(ex)
+        self.assertTrue(s.tour_complet)
+        self.assertEqual(len(discord.messages), 2)
+        # La fiche de la boutique lente, récoltée au 2e cycle d'un premier lancement,
+        # n'est pas annoncée comme « nouvelle fiche ».
+        self.assertIn("Retour en stock", str(discord.messages[-1]))
+        self.assertNotIn("Nouvelle", str(discord.messages[-1]))
 
 
 class TestFicheMenagee(unittest.TestCase):

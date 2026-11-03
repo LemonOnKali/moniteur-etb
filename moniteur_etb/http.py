@@ -116,13 +116,24 @@ class Cadence:
         self._prochain = 0.0
         self._verrou = threading.Lock()
 
-    def attendre(self) -> None:
+    def attendre(self, hote: str = "") -> bool:
+        """Attend son tour. Renvoie False si `hote` est passé en pause pendant
+        l'attente : la requête est abandonnée sans attendre la fin de son créneau
+        (vingt fiches d'un site bloqué ne patientent pas chacune 8 s pour rien)."""
         with self._verrou:
             maintenant = time.monotonic()
             depart = max(maintenant, self._prochain)
             self._prochain = depart + self.intervalle
-        if depart > maintenant:
-            time.sleep(depart - maintenant)
+        if not hote:
+            if depart > maintenant:
+                time.sleep(depart - maintenant)
+            return True
+        while PAUSES.restant(hote) <= 0:
+            reste = depart - time.monotonic()
+            if reste <= 0:
+                return True
+            time.sleep(min(reste, 0.5))
+        return False
 
     def ralentir(self) -> None:
         with self._verrou:
@@ -219,8 +230,9 @@ def telecharger(url: str, accept: str = "*/*", ajax: bool = False, pause: bool =
 
     derniere: Exception | None = None
     for tentative in range(1, TENTATIVES + 1):
-        if file:
-            file.attendre()
+        if file and not file.attendre(hote):
+            # Le site s'est mis à bloquer pendant que cette requête attendait son tour.
+            raise ErreurVerification("site en pause (limite de débit ou blocage)")
         try:
             requete = Request(url, headers=_entetes(accept, ajax))
             with urlopen(requete, timeout=TIMEOUT_S) as rep:
@@ -242,17 +254,21 @@ def telecharger(url: str, accept: str = "*/*", ajax: bool = False, pause: bool =
                 derniere = err
                 time.sleep(1.5 * tentative)
                 continue
-            # Groupe à cadence (Shopify) : un 429 vient de la limite commune, déjà gérée
-            # en ralentissant la file ; inutile de bloquer cette boutique en plus.
-            if err.code in CODES_PAUSE and pause and not (file and err.code == 429):
+            # File commune Shopify : un 429 vient de la limite partagée, déjà gérée en
+            # ralentissant la file ; inutile de bloquer cette boutique en plus. Une
+            # enseigne à file propre (« hote ») qui répond 429 est mise en pause.
+            if err.code in CODES_PAUSE and pause and not (cadence == "shopify" and err.code == 429):
                 duree = PAUSES.echec(hote)
                 raise ErreurHTTP(err.code, f"{err.reason} — pause {duree / 60:.0f} min") from err
             raise ErreurHTTP(err.code, str(err.reason)) from err
         except (URLError, TimeoutError, OSError, EOFError, zlib.error) as err:  # réseau, DNS, TLS…
             derniere = err
-            if tentative < TENTATIVES:
+            # Une enseigne à file propre n'est pas réessayée tout de suite : son nouvel
+            # essai repasserait derrière toutes les requêtes en attente pour ce site.
+            if tentative < TENTATIVES and cadence != "hote":
                 time.sleep(1.0 * tentative)
                 continue
+            break
     raison = getattr(derniere, "reason", None) or derniere
     # Site injoignable : inutile de le réinterroger à chaque requête du cycle.
     duree = PAUSES.echec(hote)

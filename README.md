@@ -151,7 +151,8 @@ dans `produits.json`.
 | `recherches` | Termes de recherche propres à cette boutique (défaut : ceux de `collection.json`). |
 | `prix_max` | Plafond pour toute la boutique (remplace ceux de `collection.json`). |
 | `intervalle_secondes` | Délai minimal entre deux vérifications de cette boutique (défaut : chaque cycle ; 120 s pour une boutique lue fiche par fiche). |
-| `recherche_url`, `pages`, `motif_fiche` | Plateforme `html` (grandes enseignes) : page de recherche avec `{q}` pour le terme, pages à parcourir (catégorie « 30 ans »), et expression des adresses de fiche. Voir les exemples Leclerc, Auchan, JouéClub, Micromania dans `boutiques.json`. |
+| `recherche_url`, `pages`, `motif_fiche` | Plateforme `html` (grandes enseignes) : page de recherche avec `{q}` pour le terme, pages à parcourir (catégorie « 30 ans »), et expression des adresses de fiche. Voir Auchan, JouéClub, Micromania dans `boutiques.json` et Carrefour, King Jouet, Cultura dans `boutiques-pc.json`. |
+| `ecart_secondes` | Écart minimal entre deux pages du site (défaut 2 s) : les grandes enseignes bloquent les rafales. |
 | `actif` | `false` pour mettre la boutique en pause. |
 
 **Autre site** : ajoute la fiche dans `produits.json` :
@@ -175,6 +176,7 @@ dans `produits.json`.
 | `regex_rupture` / `regex_stock` | Type `texte` : expression régulière sur le HTML brut. |
 | `variante` | Shopify : ne surveiller que les variantes dont le titre contient ce texte. |
 | `prix_max` | Plafond pour cette fiche. |
+| `intervalle_secondes`, `ecart_secondes` | Délai entre deux vérifications de la fiche, écart minimal entre deux pages du même site. |
 | `actif`, `note` | Pause sans suppression ; commentaire libre. |
 
 Le type `texte` lit d'abord les données structurées de la page (schema.org
@@ -193,44 +195,65 @@ produit qui correspond l'emporte, les plus précis sont donc en premier.
 `marqueurs` dit ce qui fait partie de la gamme (30e anniversaire, 30 ans,
 30th, ME05.5…) et `exclusions` ce qui n'en fait jamais partie.
 
-## Surveiller les grandes enseignes depuis ton PC
+## Lancer le moniteur sur ton PC
 
-Amazon, Carrefour, Courses U et MediaMarkt bloquent les serveurs GitHub mais
-répondent depuis une box internet. Le workflow **Moniteur de stock (PC)** fait
-tourner le moniteur sur ton ordinateur (liste `produits-pc.json`) grâce à un
-*runner auto-hébergé* GitHub. Les alertes arrivent sur le même Discord, sans
-doublon avec les boutiques suivies depuis GitHub.
+Amazon, Carrefour, King Jouet, Cultura, Courses U et MediaMarkt bloquent les
+serveurs GitHub mais répondent depuis une box internet. Sur ton PC, le
+moniteur surveille ces grandes enseignes (`produits-pc.json`,
+`boutiques-pc.json`) ; les boutiques spécialisées et E.Leclerc restent suivies
+24 h/24 par GitHub. Les alertes arrivent sur le même Discord, sans doublon.
 
-**Installation (une seule fois)**
+**Une seule fois**
 
 1. Installe Python 3.12 depuis https://www.python.org/downloads/ en cochant
-   **Add python.exe to PATH** et, dans *Customize installation*, **Install for
-   all users**.
-2. Sur GitHub : *Settings → Actions → Runners → New self-hosted runner*, choisis
-   Windows et copie-colle les commandes affichées dans PowerShell (dans un
-   dossier comme `C:\actions-runner`). À la question « run as service »,
-   réponds `Y` : le runner démarrera tout seul avec le PC.
+   **Add python.exe to PATH**.
+2. Sur la page GitHub du dépôt : **Code → Download ZIP**, puis extrais le
+   dossier (par exemple dans `Documents\moniteur-etb`). Avec `git clone` à la
+   place, le lanceur se met à jour tout seul à chaque démarrage.
 
-**Le lancer**
+**Le lancer** : double-clic sur **`lancer-pc.bat`**.
 
-1. *Settings → Actions → Runners* : ton PC doit apparaître **Idle** (vert).
-   S'il est **Offline** : touche Windows → « Services » → *GitHub Actions
-   Runner (…moniteur-etb…)* → **Démarrer** (type de démarrage : Automatique).
-   Sans service : double-clic sur `run.cmd` dans le dossier du runner et laisse
-   la fenêtre ouverte.
-2. *Actions → Moniteur de stock (PC) → Run workflow*. Tu reçois le résumé
-   `✅ Moniteur lancé` sur Discord, puis il se relance tout seul toutes les 6 h.
-3. Empêche la mise en veille : *Paramètres → Système → Alimentation → Mise en
-   veille : Jamais* (un PC en veille ne surveille rien).
+- Au premier lancement il demande l'URL du webhook Discord (*Paramètres du
+  salon → Intégrations → Webhooks → Copier l'URL*) et qui pinger. Elles sont
+  gardées dans `discord-webhook.txt` / `discord-mention.txt`, sur ton PC
+  uniquement (jamais envoyées sur GitHub).
+- Tu reçois `✅ Moniteur lancé` sur Discord, puis les alertes. Une vérification
+  toutes les 30 s ; chaque enseigne est interrogée à son rythme (une page toutes
+  les 5 à 10 s) pour ne pas être bloquée.
+- La fenêtre doit rester ouverte (tu peux la réduire). En cas de coupure
+  internet ou d'erreur, le moniteur repart seul au bout de 30 s. Pour
+  l'arrêter : ferme la fenêtre.
+- Empêche la mise en veille : *Paramètres → Système → Alimentation → Mise en
+  veille : Jamais* (un PC en veille ne surveille rien).
+- Démarrage automatique avec Windows : touche Windows + R, tape
+  `shell:startup`, Entrée, et place dans ce dossier un raccourci vers
+  `lancer-pc.bat` (clic droit → *Afficher d'autres options → Créer un
+  raccourci*).
 
-**Vérifier / ajouter une enseigne** : *Tester les boutiques* avec `ou = pc`
-montre ce que chaque enseigne répond depuis chez toi. Pour ajouter un produit,
-ouvre sa fiche dans ton navigateur, copie l'adresse et colle-la dans
-« Boutiques à tester » (avec `ou = pc`) : le test donne la ligne à copier dans
-`produits-pc.json`.
+**Tout surveiller depuis le PC** : `lancer-pc.bat tout` (dans une invite de
+commandes ouverte dans le dossier, ou un raccourci dont la cible se termine par
+` tout`) ajoute toutes les boutiques et E.Leclerc. À n'utiliser que si le
+moniteur GitHub est arrêté, sinon chaque alerte arrive deux fois.
+
+Linux, macOS ou Raspberry Pi : `./lancer-pc.sh` (ou `./lancer-pc.sh tout`).
+
+**Ajouter un produit d'une grande enseigne** : ouvre sa fiche dans ton
+navigateur, copie l'adresse, puis dans une invite de commandes ouverte dans le
+dossier : `python moniteur.py --decouvrir URL` donne la ligne à copier dans
+`produits-pc.json`. Une fiche pas encore en ligne (précommande à venir) se suit
+avec `"a_venir": true` : tant que le site répond 404, elle compte comme « pas
+encore disponible », sans erreur, et l'alerte part dès qu'elle est en vente.
+
+**Variante : runner GitHub.** Le workflow *Moniteur de stock (PC)* fait la même
+chose à travers un runner auto-hébergé (*Settings → Actions → Runners → New
+self-hosted runner*, Windows, « run as service » : `Y`), lancé depuis l'onglet
+*Actions*. N'utilise pas le runner et `lancer-pc.bat` en même temps (alertes
+en double). *Tester les boutiques* avec `ou = pc` montre ce que chaque enseigne
+répond depuis chez toi.
 
 Fnac, Cdiscount et Smyths exigent un vrai navigateur (Datadome, PerimeterX) et
-restent hors de portée : garde leurs alertes officielles.
+restent hors de portée : garde leurs alertes officielles (application, « me
+prévenir »).
 
 Pour retrouver les fiches des enseignes depuis une page « où acheter »
 (comparateur, article) : *Tester les boutiques* avec le champ « page_liens »,
@@ -242,6 +265,7 @@ ou `python moniteur.py --liens URL`.
 python moniteur.py --diagnostic                   # un passage détaillé, sans Discord
 python moniteur.py --decouvrir https://boutique.fr  # tester une boutique (ou une fiche produit)
 python moniteur.py --une-fois                     # un cycle normal
+python moniteur.py --pc                           # lancement PC (ce que fait lancer-pc.bat)
 DISCORD_WEBHOOK=https://discord.com/api/webhooks/... python moniteur.py --test-discord
 python -m unittest discover -s tests              # tests (hors ligne)
 ```

@@ -80,6 +80,43 @@ class TestPasDePreuvePasDAlerte(unittest.TestCase):
             "https://www.joueclub.fr/pokemon/coffret-0196214144835.html", "https://www.joueclub.fr/nos-heros/pokemon.html"))
 
 
+class TestLancementPC(unittest.TestCase):
+    def test_preparer_pc(self):
+        import io
+        import os
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+
+        from moniteur_etb import cli
+
+        with tempfile.TemporaryDirectory() as dossier, mock.patch.object(cli, "RACINE", Path(dossier)), \
+                mock.patch.dict(os.environ, {}, clear=True), mock.patch("sys.stdin", io.StringIO("")):
+            Path(dossier, "discord-webhook.txt").write_text("https://discord.com/api/webhooks/1/abc\n", encoding="utf-8")
+            Path(dossier, "discord-mention.txt").write_text("@everyone\n", encoding="utf-8")
+            cli.preparer_pc(tout=False)
+            self.assertEqual(os.environ["FICHIER_PRODUITS"], "produits-pc.json")
+            self.assertEqual(os.environ["FICHIER_BOUTIQUES"], "boutiques-pc.json")
+            self.assertEqual(os.environ["DISCORD_WEBHOOK"], "https://discord.com/api/webhooks/1/abc")
+            self.assertEqual(os.environ["DISCORD_MENTION"], "@everyone")
+            self.assertEqual(os.environ["GITHUB_EVENT_NAME"], "workflow_dispatch")
+            os.environ.clear()
+            cli.preparer_pc(tout=True)
+            self.assertEqual(os.environ["FICHIER_PRODUITS"], "produits.json,produits-pc.json")
+            os.chdir(cli.Path(__file__).resolve().parent.parent)
+
+    def test_plusieurs_fichiers(self):
+        import os
+
+        from moniteur_etb.surveillance import charger_boutiques, charger_produits
+
+        racine = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        seuls = len(charger_produits(os.path.join(racine, "produits-pc.json")))
+        tous = charger_produits(",".join(os.path.join(racine, f) for f in ("produits.json", "produits-pc.json")))
+        self.assertGreater(len(tous), seuls)
+        self.assertTrue(charger_boutiques(os.path.join(racine, "boutiques-pc.json")))
+
+
 class TestReglages(unittest.TestCase):
     def test_aucune_boutique(self):
         import os

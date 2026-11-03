@@ -1,0 +1,3 @@
+# Lanceur Windows : fins de ligne CRLF gardées telles quelles (aussi dans le ZIP GitHub).
+*.bat -text
+*.sh text eol=lf
