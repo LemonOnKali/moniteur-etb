@@ -1,3 +1,1 @@
-https://www.e.leclerc/_assets/OfferPickupsAPI.A2o_lIZC.js || tout
-https://www.e.leclerc/_assets/OffersByDepartment.BQM8yQHI.js || tout
-https://www.e.leclerc/_assets/AdapterApiClientCsr.BaX3PZEp.js || tout
+https://www.e.leclerc/_assets/AdapterApiClientCsr.BaX3PZEp.js || large:700:cncOfferPickupsByEan\([a-z,]*\)\{|pdv\([a-z,]*\)\{
