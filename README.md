@@ -84,8 +84,9 @@ reçoit un produit de la gamme :
 | Micromania | service « Retrait 1h » de la fiche produit | ✅ nombre de pièces | Terrasses du Port, Bonneveine, Grand Littoral, La Valentine, Avant Cap (Cabriès), Vitrolles, Aubagne |
 | E.Leclerc | offres « retrait magasin » par code-barres | ❌ disponible / pas disponible | Sormiou, Cabriès (Plan de Campagne), Vitrolles, Marignane |
 
-Micromania est vérifié toutes les 4 min, Leclerc toutes les 5 min (15
-références par code-barres, y compris les UPC avant leur sortie). Les produits
+Micromania est vérifié toutes les 4 min ; chez Leclerc, les UPC et l'ETB toutes
+les 3 min et le reste de la gamme toutes les 15 min (15 références par
+code-barres, UPC suivies avant leur sortie). Les produits
 Micromania sont retrouvés tout seuls sur sa page « 30 ans » : une fiche mise en
 ligne plus tard est suivie dès la découverte suivante (toutes les 15 min). Si
 une enseigne répond par une page anti-robot, elle est laissée tranquille

@@ -24,8 +24,8 @@
       "nom": "E.Leclerc",
       "type": "leclerc",
       "url": "https://www.e.leclerc",
-      "intervalle_secondes": 300,
-      "note": "Offres « retrait magasin » par code-barres autour de la zone (service de la fiche produit, vérifié). Pas de quantité chez Leclerc.",
+      "intervalle_secondes": 180,
+      "note": "UPC et ETB : offres « retrait magasin » par code-barres toutes les 3 min (service de la fiche produit, vérifié). Pas de quantité chez Leclerc.",
       "produits": [
         {
           "ref": "0196214155336",
@@ -44,7 +44,16 @@
           "nom": "Coffret Dresseur d'Élite 30 ans",
           "url": "https://www.e.leclerc/fp/pokemon-30a-coffret-dresseur-d-elite-0196214144835",
           "item": "etb"
-        },
+        }
+      ]
+    },
+    {
+      "nom": "E.Leclerc",
+      "type": "leclerc",
+      "url": "https://www.e.leclerc",
+      "intervalle_secondes": 900,
+      "note": "Reste de la gamme toutes les 15 min : Leclerc limite son débit (une requête toutes les 12 s, partagée avec produits.json).",
+      "produits": [
         {
           "ref": "0196214147430",
           "nom": "Collection Premium Métamorph 30 ans",
