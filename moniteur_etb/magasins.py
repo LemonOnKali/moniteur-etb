@@ -394,7 +394,7 @@ def analyser_magasins(e: Enseigne, collection: Collection, langues: frozenset[st
             _decouvrir(e, lecteur, collection, langues, analyse)
         elif decouvrir:
             e.derniere_decouverte = time.monotonic()
-        if decouvrir:
+        if decouvrir or not e.magasins:  # liste manquée (site en pause) : on la redemande au tour suivant
             if e.fiches and not en_pause(e.url):
                 # Liste des magasins de la zone (même ceux sans stock) : leur état « rien en
                 # stock » est connu, l'alerte partira bien quand le stock arrivera.

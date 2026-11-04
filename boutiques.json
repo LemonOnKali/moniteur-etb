@@ -24,5 +24,5 @@
   {"nom": "Espace Kids", "url": "https://www.espacekids.com", "plateforme": "prestashop"},
   {"nom": "Auchan", "ecart_secondes": 5, "url": "https://www.auchan.fr", "plateforme": "html", "recherche_url": "https://www.auchan.fr/recherche?text={q}", "motif_fiche": "/pr-(C\\d+|[0-9a-f]{8}-[0-9a-f-]{27})$", "recherches": ["pokemon 30 ans", "pokemon 30e anniversaire", "pokemon ultra premium"]},
   {"nom": "JouéClub", "ecart_secondes": 4, "url": "https://www.joueclub.fr", "plateforme": "html", "pages": ["https://www.joueclub.fr/contenu/pokemon-30-ans.html"], "motif_fiche": "/[^/]+/[^/]+-\\d{8,14}\\.html$"},
-  {"nom": "Micromania", "ecart_secondes": 8, "url": "https://www.micromania.fr", "plateforme": "html", "pages": ["https://www.micromania.fr/c/carte-pokemon-30-ans"], "recherche_url": "https://www.micromania.fr/on/demandware.store/Sites-Micromania-Site/fr_FR/Search-Show?q={q}", "motif_fiche": "/p/[^/]+-\\d+\\.html$", "recherches": ["pokemon 30 ans ultra premium"]}
+  {"nom": "Micromania", "ecart_secondes": 10, "intervalle_secondes": 300, "url": "https://www.micromania.fr", "plateforme": "html", "pages": ["https://www.micromania.fr/c/carte-pokemon-30-ans"], "recherche_url": "https://www.micromania.fr/on/demandware.store/Sites-Micromania-Site/fr_FR/Search-Show?q={q}", "motif_fiche": "/p/[^/]+-\\d+\\.html$", "recherches": ["pokemon 30 ans ultra premium"]}
 ]
