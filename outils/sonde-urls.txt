@@ -1,1 +1,7 @@
-https://www.e.leclerc/_assets/AdapterApiClientCsr.BaX3PZEp.js || large:700:cncOfferPickupsByEan\([a-z,]*\)\{|pdv\([a-z,]*\)\{
+json:https://www.e.leclerc/api/rest/offer/cnc-offer-pickups-by-ean/0196214147430?lat=43.2965&long=5.3698&limit=20
+pause 3
+json:https://www.e.leclerc/api/rest/offer/cnc-offer-pickups-by-ean/0196214146907?lat=43.2965&long=5.3698&limit=20
+pause 3
+json:https://www.e.leclerc/api/rest/offer/cnc-offer-pickups-by-ean/0196214152311?lat=43.2965&long=5.3698&limit=20
+pause 3
+json:https://www.e.leclerc/api/rest/locator/pdv?lat=43.2965&long=5.3698&limit=20
