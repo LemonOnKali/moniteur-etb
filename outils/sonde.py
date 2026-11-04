@@ -1,19 +1,47 @@
 """Sonde temporaire : affiche ce qu'une page expose sur le stock en magasin.
 
-python outils/sonde.py URL [URL...]  (une URL « json: » affiche la réponse JSON brute)
+Lignes de outils/sonde-urls.txt :
+  [json:]URL [|| motif]   page (ou JSON) et, en option, extraits autour d'un motif
+  pause N                 attendre N secondes (sites qui limitent le débit)
 """
+import json
 import re
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from moniteur_etb import http  # noqa: E402
 
-MOTS = re.compile(r"magasin|store|inventory|pickup|retrait|click|stock|availability|drive", re.I)
-URLS = re.compile(r"""(?:https?://[^\s"'<>\\]+|/[A-Za-z0-9_\-./]*(?:demandware\.store|/api/|Stores?-|magasin|store|stock|inventory|pickup)[^\s"'<>\\]*)""", re.I)
+MOTS = re.compile(r"magasin|store|inventory|pickup|retrait|click|stock|availability|drive|ajax|api", re.I)
+URLS = re.compile(r"""(?:https?://[^\s"'<>\\]+|/[A-Za-z0-9_\-./]*(?:demandware\.store|/api/|ajax|Stores?-|magasin|store|stock|inventory|pickup)[^\s"'<>\\]*)""", re.I)
 
 
-def sonder(url: str) -> None:
+def texte_brut(html: str) -> str:
+    html = re.sub(r"<script.*?</script>|<style.*?</style>", " ", html, flags=re.S | re.I)
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html))
+
+
+def extraits(texte: str, motif: str, n: int = 25, large: int = 200) -> None:
+    print(f"-- extraits /{motif}/ :")
+    for i, m in enumerate(re.finditer(motif, texte, re.I)):
+        if i >= n:
+            break
+        print("   …", re.sub(r"\s+", " ", texte[max(0, m.start() - large): m.end() + large]), "…")
+
+
+def nettoyer(x):
+    if isinstance(x, dict):
+        return {k: nettoyer(v) for k, v in x.items() if k not in {"storeHours", "lunchHours", "csrf", "storeSpecialDays", "locations"}}
+    if isinstance(x, list):
+        return [nettoyer(v) for v in x]
+    if isinstance(x, str) and len(x) > 600:
+        return x[:600] + "…"
+    return x
+
+
+def sonder(ligne: str) -> None:
+    url, _, motif = (p.strip() for p in ligne.partition("||"))
     brut = url.startswith("json:")
     url = url.removeprefix("json:")
     print(f"\n######## {url}")
@@ -26,47 +54,39 @@ def sonder(url: str) -> None:
     print(f"code={rep.code} type={rep.type} final={rep.url} taille={len(texte)}")
     if brut or rep.type.endswith("json"):
         try:
-            import json
             donnees = json.loads(texte)
-
-            def nettoyer(x):
-                if isinstance(x, dict):
-                    return {k: nettoyer(v) for k, v in x.items() if k not in {"storeHours", "lunchHours", "csrf", "storeSpecialDays"}}
-                if isinstance(x, list):
-                    return [nettoyer(v) for v in x]
-                if isinstance(x, str) and len(x) > 1500:
-                    return x[:1500] + "…"
-                return x
-            print(json.dumps(nettoyer(donnees), ensure_ascii=False)[:15000])
         except ValueError:
-            print(texte[:6000])
+            print(texte[:4000])
+            return
+        html = donnees.get("storesResultsHtml") if isinstance(donnees, dict) else None
+        print(json.dumps(nettoyer(donnees), ensure_ascii=False)[:8000])
+        if html:
+            print("-- storesResultsHtml (texte) :", texte_brut(html)[:6000])
+            extraits(html, r"stock|dispo|availab|quantit", n=30, large=250)
+        if motif:
+            extraits(texte, motif)
         return
     if "javascript" in rep.type or url.endswith(".js"):
-        for ligne in texte.splitlines():
-            if re.search(r"url|ajax|Action|http|REST|stock|store", ligne, re.I):
-                print("   ", ligne.strip()[:240])
+        extraits(texte, motif or r"https?://|/api/|fetch\(|ajax", n=60, large=150)
         return
+    urls = sorted({u for u in URLS.findall(texte) if MOTS.search(u) and not u.endswith((".png", ".jpg", ".svg", ".webp", ".css", ".woff2"))})
+    print(f"-- {len(urls)} URL(s) :")
+    for u in urls[:150]:
+        print("   ", u[:220])
     pids = sorted(set(re.findall(r'data-pid="([^"]+)"', texte)))
     if pids:
         print(f"-- data-pid : {pids[:80]}")
-    for cle in ("availableinstore",):
-        i = texte.find(f'"id":"{cle}"')
-        if i >= 0:
-            print(f"-- bloc {cle} :", texte[i:i + 12000])
-    urls = sorted({u for u in URLS.findall(texte) if MOTS.search(u) and not u.endswith((".png", ".jpg", ".svg", ".webp", ".css", ".woff2"))})
-    print(f"-- {len(urls)} URL(s) liées au stock/magasin :")
-    for u in urls[:120]:
-        print("   ", u[:220])
-    print("-- extraits « magasin » :")
-    vus = 0
-    for m in re.finditer(r"magasin|en stock|retrait|storeId|store_id|inventory", texte, re.I):
-        extrait = re.sub(r"\s+", " ", texte[max(0, m.start() - 160): m.end() + 160])
-        print("   …", extrait, "…")
-        vus += 1
-        if vus >= 25:
-            break
+    if motif:
+        extraits(texte, motif)
 
 
 if __name__ == "__main__":
-    for u in sys.argv[1:]:
-        sonder(u)
+    fichier = Path(__file__).with_name("sonde-urls.txt")
+    for ligne in fichier.read_text(encoding="utf-8").splitlines():
+        ligne = ligne.strip()
+        if not ligne or ligne.startswith("#"):
+            continue
+        if ligne.startswith("pause "):
+            time.sleep(float(ligne.split()[1]))
+            continue
+        sonder(ligne)

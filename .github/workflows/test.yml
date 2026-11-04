@@ -53,7 +53,7 @@ jobs:
           python-version: "3.12"
       - name: Sonde (temporaire)
         if: inputs.decouvrir == 'sonde'
-        run: python outils/sonde.py $(grep -v '^#' outils/sonde-urls.txt)
+        run: python outils/sonde.py
       - name: Tester des boutiques
         if: inputs.decouvrir != '' && inputs.decouvrir != 'sonde'
         env:
