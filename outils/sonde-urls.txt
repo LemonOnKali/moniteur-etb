@@ -1,9 +1,10 @@
-json:https://www.micromania.fr/on/demandware.store/Sites-Micromania-Site/fr_FR/Stores-InventorySearch?showMap=false&products=162657:1&radius=15&postalCode=13001&isCC=true&isPDP=true
-pause 10
-https://www.micromania.fr/c/carte-pokemon-30-ans || data-pid="[0-9]+"
-pause 10
-https://www.auchan.fr/recherche?text=pokemon+30+ans || availableinstore
-https://www.joueclub.fr/contenu/pokemon-30-ans.html || ajax|rest\.php|/Action/|apiUrl|restUrl|"baseURL"|navigationContext
-https://www.e.leclerc/fp/coffret-premium-8-boosters-0196214147430 || offre|offer|seller|vendeur|"stock|magasin":|storeId|codePdv|pdv
-https://www.e.leclerc/_assets/HeaderStoreLocatorButtonHandler.BeuiKd1J.js
-https://www.e.leclerc/trouver-un-magasin || api|magasin
+https://www.micromania.fr/
+pause 8
+json:https://www.micromania.fr/on/demandware.store/Sites-Micromania-Site/fr_FR/Stores-InventorySearch?showMap=false&products={pid}:1&radius=30&postalCode=13001&isCC=true&isPDP=true || large:400:"stores"
+pause 8
+https://www.auchan.fr/recherche?text=pokemon&availableinstore=42190f182d7ad52d4ad42d8b922d811e9074b5a7 || "selected":true
+https://www.auchan.fr/recherche?text=pokemon&facets=availableinstore:42190f182d7ad52d4ad42d8b922d811e9074b5a7 || "selected":true
+https://www.auchan.fr/recherche?text=pokemon&filters=availableinstore%3A42190f182d7ad52d4ad42d8b922d811e9074b5a7 || "selected":true
+https://www.e.leclerc/fp/coffret-premium-8-boosters-0196214147430 || large:1500:"api":\{
+https://www.e.leclerc/fp/coffret-premium-8-boosters-0196214147430 || large:300:woosmap|cnc|Cnc
+https://www.joueclub.fr/contenu/nos-magasins.html || large:300:Bouches|Marseille|<script[^>]+src=

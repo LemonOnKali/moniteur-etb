@@ -23,6 +23,9 @@ def texte_brut(html: str) -> str:
 
 
 def extraits(texte: str, motif: str, n: int = 25, large: int = 200) -> None:
+    if motif.startswith("large:"):
+        _, large_txt, motif = motif.split(":", 2)
+        large = int(large_txt)
     print(f"-- extraits /{motif}/ :")
     for i, m in enumerate(re.finditer(motif, texte, re.I)):
         if i >= n:
@@ -40,8 +43,15 @@ def nettoyer(x):
     return x
 
 
+DERNIERS_PIDS: list[str] = []
+
+
 def sonder(ligne: str) -> None:
     url, _, motif = (p.strip() for p in ligne.partition("||"))
+    if "{pid}" in url:
+        for pid in DERNIERS_PIDS[:3]:
+            sonder(ligne.replace("{pid}", pid))
+        return
     brut = url.startswith("json:")
     url = url.removeprefix("json:")
     print(f"\n######## {url}")
@@ -76,6 +86,7 @@ def sonder(ligne: str) -> None:
     pids = sorted(set(re.findall(r'data-pid="([^"]+)"', texte)))
     if pids:
         print(f"-- data-pid : {pids[:80]}")
+        DERNIERS_PIDS[:] = pids
     if motif:
         extraits(texte, motif)
 
