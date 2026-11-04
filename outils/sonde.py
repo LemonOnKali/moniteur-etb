@@ -25,8 +25,34 @@ def sonder(url: str) -> None:
     texte = rep.texte()
     print(f"code={rep.code} type={rep.type} final={rep.url} taille={len(texte)}")
     if brut or rep.type.endswith("json"):
-        print(texte[:6000])
+        try:
+            import json
+            donnees = json.loads(texte)
+
+            def nettoyer(x):
+                if isinstance(x, dict):
+                    return {k: nettoyer(v) for k, v in x.items() if k not in {"storeHours", "lunchHours", "csrf", "storeSpecialDays"}}
+                if isinstance(x, list):
+                    return [nettoyer(v) for v in x]
+                if isinstance(x, str) and len(x) > 1500:
+                    return x[:1500] + "…"
+                return x
+            print(json.dumps(nettoyer(donnees), ensure_ascii=False)[:15000])
+        except ValueError:
+            print(texte[:6000])
         return
+    if "javascript" in rep.type or url.endswith(".js"):
+        for ligne in texte.splitlines():
+            if re.search(r"url|ajax|Action|http|REST|stock|store", ligne, re.I):
+                print("   ", ligne.strip()[:240])
+        return
+    pids = sorted(set(re.findall(r'data-pid="([^"]+)"', texte)))
+    if pids:
+        print(f"-- data-pid : {pids[:80]}")
+    for cle in ("availableinstore",):
+        i = texte.find(f'"id":"{cle}"')
+        if i >= 0:
+            print(f"-- bloc {cle} :", texte[i:i + 12000])
     urls = sorted({u for u in URLS.findall(texte) if MOTS.search(u) and not u.endswith((".png", ".jpg", ".svg", ".webp", ".css", ".woff2"))})
     print(f"-- {len(urls)} URL(s) liées au stock/magasin :")
     for u in urls[:120]:
