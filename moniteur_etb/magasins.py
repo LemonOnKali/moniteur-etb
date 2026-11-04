@@ -104,6 +104,10 @@ class Enseigne:
     ecart: float | None = None
     actif: bool = True
     produits: list[dict[str, str]] = field(default_factory=list)  # liste fixe : ref (EAN…), nom, url, item
+    items: frozenset[str] = frozenset()  # produits suivis en magasin (ids de collection.json) ; vide = toute la gamme
+
+    def suit(self, item: Item) -> bool:
+        return not self.items or item.id in self.items
 
     # État d'exécution
     detectee: str = "magasins"
@@ -126,7 +130,7 @@ class Enseigne:
         return self.derniere_verification is None or time.monotonic() - self.derniere_verification >= self.intervalle - 1
 
     @classmethod
-    def depuis_dict(cls, brut: Any, zone: Zone, index: int) -> "Enseigne":
+    def depuis_dict(cls, brut: Any, zone: Zone, index: int, items: frozenset[str] = frozenset()) -> "Enseigne":
         if not isinstance(brut, dict):
             raise ValueError(f"enseigne n°{index + 1} : doit être un objet JSON")
         nom = str(brut.get("nom", "")).strip()
@@ -171,6 +175,7 @@ class Enseigne:
             ecart=ecart,
             actif=bool(brut.get("actif", True)),
             produits=[{k: str(v) for k, v in p.items()} for p in produits],
+            items=_items(brut["items"], nom) if "items" in brut else items,
         )
 
 
@@ -357,7 +362,7 @@ def _decouvrir(e: Enseigne, lecteur: Lecteur, collection: Collection, langues: f
             if not ref or ref in trouvees:
                 continue
             classement = collection.classer(f.titre, exiger_marqueur=True)
-            if classement is None or not langue_acceptee(classement.langue, langues):
+            if classement is None or not langue_acceptee(classement.langue, langues) or not e.suit(classement.item):
                 analyse.autres.append(f)
                 continue
             trouvees[ref] = FicheMagasin(ref=ref, url=f.url, titre=f.titre, item=classement.item, langue=classement.langue)
@@ -380,6 +385,8 @@ def analyser_magasins(e: Enseigne, collection: Collection, langues: frozenset[st
                 item = collection.item(p.get("item", "")) or getattr(collection.classer(p["nom"], exiger_marqueur=False), "item", None)
                 if item is None:
                     analyse.erreurs.append(f"{p['nom']} : produit non reconnu (ajoute 'item')")
+                    continue
+                if not e.suit(item):
                     continue
                 url = p.get("url") or e.url
                 e.fiches[p["ref"]] = FicheMagasin(ref=p["ref"], url=url, titre=p["nom"], item=item)
@@ -440,5 +447,13 @@ def charger_enseignes(brut: Any, source: str = "magasins.json") -> list[Enseigne
     if not isinstance(brut, dict) or not isinstance(brut.get("enseignes"), list):
         raise ValueError(f"{source} : objet avec 'zone' et 'enseignes' (liste) attendu")
     zone = Zone.depuis_dict(brut.get("zone"))
-    return [Enseigne.depuis_dict(e, zone, i) for i, e in enumerate(brut["enseignes"])]
+    items = _items(brut["items"], source) if "items" in brut else frozenset()
+    return [Enseigne.depuis_dict(e, zone, i, items) for i, e in enumerate(brut["enseignes"])]
+
+
+def _items(brut: Any, ou: str) -> frozenset[str]:
+    """« items » : ids des produits suivis en magasin (etb, upc-journee…, voir collection.json)."""
+    if not isinstance(brut, list) or not all(isinstance(i, str) and i.strip() for i in brut):
+        raise ValueError(f"{ou} : 'items' doit être une liste d'ids de collection.json (ex. [\"etb\", \"upc-journee\"])")
+    return frozenset(i.strip() for i in brut)
 

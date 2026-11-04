@@ -73,8 +73,9 @@ Play-in (stock chargé en JavaScript), Pokémon Center.
 ## Stock en magasin (Marseille + 20 km)
 
 En plus des sites, le moniteur regarde le **stock des magasins physiques**
-autour de Marseille (fichier `magasins.json`) et prévient dès qu'un magasin
-reçoit un produit de la gamme :
+autour de Marseille (fichier `magasins.json`) pour les **ETB et les UPC**
+(Ultra-Premium Journée, Soirée et générique), et prévient dès qu'un magasin en
+reçoit :
 
 > 🚨 **Collection Ultra-Premium Journée (Mentali)** en stock **en magasin** chez
 > **Micromania La Valentine** (4 pièce(s)) — adresse, distance, lien de la fiche.
@@ -84,13 +85,17 @@ reçoit un produit de la gamme :
 | Micromania | service « Retrait 1h » de la fiche produit | ✅ nombre de pièces | Terrasses du Port, Bonneveine, Grand Littoral, La Valentine, Avant Cap (Cabriès), Vitrolles, Aubagne |
 | E.Leclerc | offres « retrait magasin » par code-barres | ❌ disponible / pas disponible | Sormiou, Cabriès (Plan de Campagne), Vitrolles, Marignane |
 
-Micromania est vérifié toutes les 4 min ; chez Leclerc, les UPC et l'ETB toutes
-les 3 min et le reste de la gamme toutes les 15 min (15 références par
-code-barres, UPC suivies avant leur sortie). Les produits
-Micromania sont retrouvés tout seuls sur sa page « 30 ans » : une fiche mise en
-ligne plus tard est suivie dès la découverte suivante (toutes les 15 min). Si
-une enseigne répond par une page anti-robot, elle est laissée tranquille
-quelques minutes avant de réessayer.
+Vérification toutes les 2 min chez les deux enseignes. Chez Leclerc, l'ETB et
+les deux UPC sont suivis par code-barres, même avant leur mise en ligne. Chez
+Micromania, les fiches sont retrouvées toutes seules sur la page « 30 ans » et
+la recherche « ultra premium » : une UPC mise en ligne plus tard est suivie dès
+la découverte suivante (toutes les 15 min). Si une enseigne répond par une page
+anti-robot, elle est laissée tranquille quelques minutes avant de réessayer.
+
+**Suivre d'autres produits en magasin** : dans `magasins.json`, ajoute leurs
+ids (voir `collection.json` : `bundle`, `coffret-ex`, `poster`…) à `items`, ou
+supprime la ligne `items` pour toute la gamme. Pour Leclerc, ajoute aussi le
+code-barres dans `produits` de l'enseigne.
 
 Ce stock vient du logiciel de caisse de l'enseigne : il peut avoir quelques
 heures de retard sur le rayon (carton en réserve, mise en rayon le lendemain).
