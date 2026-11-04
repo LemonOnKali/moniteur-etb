@@ -23,6 +23,12 @@ def texte_brut(html: str) -> str:
 
 
 def extraits(texte: str, motif: str, n: int = 25, large: int = 200) -> None:
+    if motif.startswith("uniq:"):
+        trouves = sorted(set(re.findall(motif[5:], texte, re.I)))
+        print(f"-- {len(trouves)} correspondance(s) uniques /{motif[5:]}/ :")
+        for t in trouves[:150]:
+            print("   ", str(t)[:300])
+        return
     if motif.startswith("large:"):
         _, large_txt, motif = motif.split(":", 2)
         large = int(large_txt)
@@ -49,8 +55,9 @@ DERNIERS_PIDS: list[str] = []
 def sonder(ligne: str) -> None:
     url, _, motif = (p.strip() for p in ligne.partition("||"))
     if "{pid}" in url:
-        for pid in DERNIERS_PIDS[:3]:
+        for pid in [p for p in DERNIERS_PIDS if p.isdigit()][:3]:
             sonder(ligne.replace("{pid}", pid))
+            time.sleep(8)
         return
     brut = url.startswith("json:")
     url = url.removeprefix("json:")
