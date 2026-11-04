@@ -23,6 +23,9 @@ def texte_brut(html: str) -> str:
 
 
 def extraits(texte: str, motif: str, n: int = 25, large: int = 200) -> None:
+    if motif == "tout":
+        print(texte[:9000])
+        return
     if motif.startswith("uniq:"):
         trouves = sorted(set(re.findall(motif[5:], texte, re.I)))
         print(f"-- {len(trouves)} correspondance(s) uniques /{motif[5:]}/ :")

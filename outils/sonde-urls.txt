@@ -1,3 +1,3 @@
-https://www.e.leclerc/_assets/drawerPreload.utils.4Xgxt2z2.js || large:250:fetch|url|drawer|/fp|api
-https://www.e.leclerc/_assets/interactionComponents.utils.DsYv22SI.js || large:250:fetch|url|drawer|/fp|api
-https://www.e.leclerc/_assets/PickupStateStore.CHVVn-LL.js || large:200:fetch|url|store|cookie|localStorage|api
+https://www.e.leclerc/_assets/OfferPickupsAPI.A2o_lIZC.js || tout
+https://www.e.leclerc/_assets/OffersByDepartment.BQM8yQHI.js || tout
+https://www.e.leclerc/_assets/AdapterApiClientCsr.BaX3PZEp.js || tout
