@@ -53,7 +53,9 @@ jobs:
           python-version: "3.12"
       - name: Sonde (temporaire)
         if: inputs.decouvrir == 'sonde'
-        run: python outils/sonde.py
+        run: |
+          FICHIER_BOUTIQUES=aucun FICHIER_PRODUITS= python moniteur.py --diagnostic
+          FICHIER_BOUTIQUES=aucun FICHIER_PRODUITS= FICHIER_ETAT=etat-sonde.json DUREE_MINUTES=3 INTERVALLE_SECONDES=30 python moniteur.py
       - name: Tester des boutiques
         if: inputs.decouvrir != '' && inputs.decouvrir != 'sonde'
         env:
@@ -70,6 +72,7 @@ jobs:
         env:
           FICHIER_PRODUITS: ${{ inputs.ou == 'pc' && 'produits-pc.json' || 'produits.json' }}
           FICHIER_BOUTIQUES: ${{ inputs.ou == 'pc' && 'boutiques-pc.json' || 'boutiques.json' }}
+          FICHIER_MAGASINS: ${{ inputs.ou == 'pc' && 'aucun' || 'magasins.json' }}
           FICHIER_ETAT: etat-essai.json
           DUREE_MINUTES: ${{ inputs.essai_minutes }}
           INTERVALLE_SECONDES: ${{ vars.INTERVALLE_SECONDES || '30' }}
@@ -79,4 +82,5 @@ jobs:
         env:
           FICHIER_PRODUITS: ${{ inputs.ou == 'pc' && 'produits-pc.json' || 'produits.json' }}
           FICHIER_BOUTIQUES: ${{ inputs.ou == 'pc' && 'boutiques-pc.json' || 'boutiques.json' }}
+          FICHIER_MAGASINS: ${{ inputs.ou == 'pc' && 'aucun' || 'magasins.json' }}
         run: python moniteur.py --diagnostic

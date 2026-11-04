@@ -49,6 +49,7 @@ jobs:
           # Enseignes qui bloquent GitHub seulement (Carrefour…) : les autres
           # boutiques sont surveillées depuis GitHub, pas de doublon d'alerte.
           FICHIER_BOUTIQUES: boutiques-pc.json
+          FICHIER_MAGASINS: aucun  # stock en magasin suivi par le moniteur GitHub
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           PYTHONUNBUFFERED: "1"
           PYTHONIOENCODING: utf-8

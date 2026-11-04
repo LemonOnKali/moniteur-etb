@@ -42,6 +42,7 @@ class Reglages:
     langues: frozenset[str] = frozenset({"fr"})  # langues de cartes acceptées (fr, en, jp…)
     fichier_produits: str = "produits.json"
     fichier_boutiques: str = "boutiques.json"
+    fichier_magasins: str = "magasins.json"  # stock en magasin autour d'une zone
     fichier_collection: str = "collection.json"
     fichier_etat: str = "etat.json"
     evenement_github: str = ""
@@ -63,6 +64,7 @@ class Reglages:
             langues=frozenset(langues or {"fr"}),
             fichier_produits=os.environ.get("FICHIER_PRODUITS", "produits.json"),
             fichier_boutiques=_fichier_optionnel("FICHIER_BOUTIQUES", "boutiques.json"),
+            fichier_magasins=_fichier_optionnel("FICHIER_MAGASINS", "magasins.json"),
             fichier_collection=os.environ.get("FICHIER_COLLECTION", "collection.json"),
             fichier_etat=os.environ.get("FICHIER_ETAT", "etat.json"),
             evenement_github=os.environ.get("GITHUB_EVENT_NAME", ""),

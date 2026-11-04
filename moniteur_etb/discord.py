@@ -125,8 +125,30 @@ def _horodatage() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+def embed_magasin(offre: Offre) -> dict[str, Any]:
+    """Carte Discord d'un produit qui arrive en stock dans un magasin de la zone."""
+    x = offre.extras
+    champs = [
+        {"name": "🏬 Magasin", "value": f"{x.get('enseigne', '')} {x.get('magasin', '')}".strip()[:100], "inline": True},
+        {"name": "📦 Stock", "value": f"{offre.quantite} en magasin" if offre.quantite else "en stock", "inline": True},
+        {"name": "🚗 Distance", "value": x.get("distance", "?"), "inline": True},
+        {"name": "📍 Adresse", "value": (x.get("adresse") or "?")[:200], "inline": False},
+    ]
+    return {
+        "title": f"🏬 {offre.item.emoji} {offre.item.nom} en magasin"[:256],
+        "url": offre.url,
+        "description": f"**[{offre.titre[:200]}]({offre.url})**\nDisponible en retrait magasin : réserve en ligne ou passe en boutique.",
+        "color": VERT,
+        "fields": champs,
+        "footer": {"text": f"stock magasin indiqué par l'enseigne · moniteur 30 ans v{VERSION}"},
+        "timestamp": _horodatage(),
+    }
+
+
 def embed_offre(offre: Offre, nouvelle: bool) -> dict[str, Any]:
     """Carte Discord d'une offre qui vient de passer en stock."""
+    if offre.source == "magasin":
+        return embed_magasin(offre)
     prix = formater_prix(offre.prix) or "prix non lu"
     champs = [
         {"name": "💶 Prix", "value": prix, "inline": True},
@@ -166,7 +188,11 @@ def resume_alertes(alertes: list[Offre]) -> str:
     """Texte court de la notification : « 🚨 ETB 30 ans — LorenZone 69,90 € (+2 autres) »."""
     premiere = alertes[0]
     prix = formater_prix(premiere.prix)
-    texte = f"🚨 **{premiere.item.nom}** en stock chez **{premiere.boutique}**" + (f" à {prix}" if prix else "")
+    if premiere.source == "magasin":
+        quantite = f" ({premiere.quantite} pièce(s))" if premiere.quantite else ""
+        texte = f"🚨 **{premiere.item.nom}** en stock **en magasin** chez **{premiere.boutique}**{quantite}"
+    else:
+        texte = f"🚨 **{premiere.item.nom}** en stock chez **{premiere.boutique}**" + (f" à {prix}" if prix else "")
     if len(alertes) > 1:
         autres = ", ".join(f"{o.item.nom} ({o.boutique})" for o in alertes[1:4])
         texte += f" — et aussi : {autres}" + (" …" if len(alertes) > 4 else "")

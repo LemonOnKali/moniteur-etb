@@ -11,10 +11,10 @@ from concurrent.futures import ThreadPoolExecutor
 
 from . import VERSION, etat, http
 from .collection import Collection
-from .diagnostic import decouvrir, diagnostiquer_boutique, diagnostiquer_produit, lister_liens
+from .diagnostic import decouvrir, diagnostiquer_boutique, diagnostiquer_enseigne, diagnostiquer_produit, lister_liens
 from .discord import Discord
 from .reglages import Reglages
-from .surveillance import Surveillance, charger_boutiques, charger_produits, executer, log
+from .surveillance import Surveillance, charger_boutiques, charger_magasins, charger_produits, executer, log
 
 
 RACINE = Path(__file__).resolve().parent.parent
@@ -51,6 +51,7 @@ def preparer_pc(tout: bool) -> None:
     os.chdir(RACINE)
     os.environ.setdefault("FICHIER_PRODUITS", "produits.json,produits-pc.json" if tout else "produits-pc.json")
     os.environ.setdefault("FICHIER_BOUTIQUES", "boutiques.json,boutiques-pc.json" if tout else "boutiques-pc.json")
+    os.environ.setdefault("FICHIER_MAGASINS", "magasins.json" if tout else "aucun")
     os.environ.setdefault("FICHIER_ETAT", "etat-pc.json")
     os.environ.setdefault("DUREE_MINUTES", "525600")  # un an : en pratique, jusqu'à la fermeture de la fenêtre
     os.environ.setdefault("INTERVALLE_SECONDES", "30")
@@ -112,15 +113,20 @@ def main(argv: list[str] | None = None) -> int:
 
     produits = charger_produits(reglages.fichier_produits)
     boutiques = charger_boutiques(reglages.fichier_boutiques)
-    if not produits and not boutiques:
-        log("Rien à surveiller : vérifie boutiques.json et produits.json.")
+    enseignes = charger_magasins(reglages.fichier_magasins)
+    if not produits and not boutiques and not enseignes:
+        log("Rien à surveiller : vérifie boutiques.json, produits.json et magasins.json.")
         return 1
 
     if args.diagnostic:
         surveillance = Surveillance(reglages, collection, produits, boutiques, discord, {})
-        with ThreadPoolExecutor(max_workers=max(1, min(reglages.max_workers, len(produits) + len(boutiques)))) as ex:
+        taches = len(produits) + len(boutiques) + len(enseignes)
+        with ThreadPoolExecutor(max_workers=max(1, min(reglages.max_workers, taches))) as ex:
+            en_magasin = list(ex.map(lambda e: diagnostiquer_enseigne(e, collection, reglages.langues), enseignes))
             analyses = list(ex.map(lambda b: diagnostiquer_boutique(b, collection, reglages.langues), boutiques))
             offres = list(ex.map(surveillance.offre_produit, produits))
+        for analyse in en_magasin:
+            analyses.append(analyse)
         for produit, offre in zip(produits, offres):
             diagnostiquer_produit(produit, offre)
         fiches = [o for a in analyses for o in a.offres] + offres
@@ -134,11 +140,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     log(
-        f"Moniteur v{VERSION} — {len(boutiques)} boutique(s) et {len(produits)} fiche(s), "
+        f"Moniteur v{VERSION} — {len(boutiques)} boutique(s), {len(produits)} fiche(s)"
+        + (f", stock en magasin chez {len(enseignes)} enseigne(s)" if enseignes else "") + ", "
         f"toutes les {reglages.intervalle_secondes:.0f} s pendant {reglages.duree_minutes:.0f} min, "
         f"langues {','.join(sorted(reglages.langues))}"
     )
     if not reglages.discord_webhook:
         log("⚠️  DISCORD_WEBHOOK n'est pas défini : les alertes seront seulement affichées ici.")
-    surveillance = Surveillance(reglages, collection, produits, boutiques, discord, etat.charger(reglages.fichier_etat))
+    surveillance = Surveillance(reglages, collection, produits, boutiques, discord, etat.charger(reglages.fichier_etat),
+                                enseignes)
     return executer(surveillance, une_fois=args.une_fois)

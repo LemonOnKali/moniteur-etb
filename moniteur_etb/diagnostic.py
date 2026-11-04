@@ -15,6 +15,7 @@ from urllib.parse import unquote, urlsplit, urlunsplit
 from .boutiques import Analyse, Boutique, analyser, liens_fiches
 from .collection import Collection
 from .http import ErreurVerification, telecharger, telecharger_page
+from .magasins import Enseigne, analyser_magasins
 from .modeles import Offre
 from .pages import (
     _RE_PRESTASHOP,
@@ -92,6 +93,28 @@ def diagnostiquer_boutique(b: Boutique, collection: Collection, langues: frozens
         lignes.append(f"    hors gamme ({len(analyse.autres)}) :")
         for f in analyse.autres[:25]:
             lignes.append(f"      · {f.titre[:90]}  {formater_prix(f.prix)}")
+    print("\n".join(lignes) + "\n", flush=True)
+    return analyse
+
+
+def diagnostiquer_enseigne(e: Enseigne, collection: Collection, langues: frozenset[str]) -> Analyse:
+    """Stock en magasin : fiches suivies, magasins de la zone et ceux qui ont du stock."""
+    analyse = analyser_magasins(e, collection, langues, decouvrir=True)
+    en_stock = [o for o in analyse.offres if o.dispo]
+    lignes = [
+        f"=== {e.nom} [en magasin] {len(e.fiches)} produit(s) 30 ans × {len(e.magasins)} magasin(s) "
+        f"à moins de {e.zone.rayon_km:g} km de {e.zone.nom} — {len(en_stock)} en stock — {analyse.requetes} requête(s)",
+        f"    {e.url}",
+    ]
+    for m in sorted(e.magasins.values(), key=lambda m: m.distance_km):
+        lignes.append(f"    🏬 {m.nom} ({m.distance_km:.1f} km) — {m.adresse}")
+    for f in e.fiches.values():
+        lignes.append(f"    📦 {f.item.nom} — {f.titre[:80]}  {f.url}")
+    for erreur in analyse.erreurs:
+        lignes.append(f"    ⚠️  {erreur}")
+    for o in sorted(en_stock, key=lambda o: (o.item.nom, o.boutique)):
+        quantite = f" ({o.quantite} en stock)" if o.quantite else ""
+        lignes.append(f"    ✅ {o.boutique} · {o.item.nom}{quantite} — {o.detail}")
     print("\n".join(lignes) + "\n", flush=True)
     return analyse
 

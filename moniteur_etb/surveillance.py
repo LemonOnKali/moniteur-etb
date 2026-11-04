@@ -18,6 +18,7 @@ from .boutiques import Analyse, Boutique, analyser
 from .collection import Collection
 from .discord import BLEU, ORANGE, Discord, embed_offre, embed_rupture, resume_alertes
 from .http import regler_ecart
+from .magasins import Enseigne, analyser_magasins, charger_enseignes
 from .modeles import Offre, cle_url
 from .pages import Produit, verifier
 from .reglages import Reglages
@@ -91,6 +92,32 @@ def charger_produits(chemin: str) -> list[Produit]:
     return produits
 
 
+def charger_magasins(chemins: str) -> list[Enseigne]:
+    """magasins.json (stock en magasin autour d'une zone) ; "" = rien à suivre en magasin."""
+    enseignes: list[Enseigne] = []
+    for chemin in (c.strip() for c in chemins.split(",")):
+        if not chemin:
+            continue
+        try:
+            with open(chemin, encoding="utf-8") as f:
+                brut = json.load(f)
+        except FileNotFoundError:
+            sys.exit(f"Fichier {chemin} introuvable.")
+        except json.JSONDecodeError as err:
+            sys.exit(f"{chemin} n'est pas un JSON valide : {err}")
+        try:
+            liste = charger_enseignes(brut, chemin)
+        except ValueError as err:
+            sys.exit(str(err))
+        for e in liste:
+            if not e.actif:
+                continue
+            if e.ecart:
+                regler_ecart(urlsplit(e.url).hostname or "", e.ecart)
+            enseignes.append(e)
+    return enseignes
+
+
 def charger_boutiques(chemin: str) -> list[Boutique]:
     if not chemin:
         return []
@@ -140,18 +167,20 @@ class Surveillance:
         boutiques: list[Boutique],
         discord: Discord,
         etat: dict[str, dict[str, Any]],
+        enseignes: list[Enseigne] | None = None,
     ):
         self.reglages = reglages
         self.collection = collection
         self.produits = produits
         self.boutiques = boutiques
+        self.enseignes = enseignes or []  # stock en magasin (magasins.json)
         self.discord = discord
         self.etat = etat
         self.cycle_n = 0
         self._erreurs_vues: dict[str, str] = {}
         # Vérifications encore en cours d'un cycle à l'autre (grande enseigne lente) :
         # elles ne retardent pas les boutiques rapides, leur résultat est pris plus tard.
-        self._en_cours: dict[Future[Any], Boutique | Produit] = {}
+        self._en_cours: dict[Future[Any], Boutique | Enseigne | Produit] = {}
         self._vus: set[int] = set()  # sources dont un résultat a déjà été récolté
         self._etat_initial_vide = not etat
         self.attendre_tout = False  # un seul passage (--une-fois) : tout attendre au 1er cycle
@@ -159,7 +188,7 @@ class Surveillance:
     @property
     def tour_complet(self) -> bool:
         """Vrai quand chaque boutique et chaque fiche a donné au moins un résultat."""
-        return len(self._vus) >= len(self.boutiques) + len(self.produits)
+        return len(self._vus) >= len(self.boutiques) + len(self.produits) + len(self.enseignes)
 
     # -- Vérifications ------------------------------------------------------ #
 
@@ -208,6 +237,13 @@ class Surveillance:
             if not decouvrir and not b.verification_due():
                 continue
             futurs[executeur.submit(analyser, b, self.collection, self.reglages.langues, decouvrir)] = b
+        for e in self.enseignes:
+            if id(e) in occupees:
+                continue
+            decouvrir = e.decouverte_due(intervalle_decouverte)
+            if not decouvrir and not e.verification_due():
+                continue
+            futurs[executeur.submit(analyser_magasins, e, self.collection, self.reglages.langues, decouvrir)] = e
         for p in self.produits:
             if id(p) in occupees or not p.verification_due():
                 continue
@@ -219,7 +255,7 @@ class Surveillance:
         for futur in finis:
             origine = futurs.pop(futur)
             self._vus.add(id(origine))
-            if isinstance(origine, Boutique):
+            if isinstance(origine, (Boutique, Enseigne)):
                 analyse: Analyse = futur.result()
                 bilan.requetes += analyse.requetes
                 if analyse.decouverte:
@@ -239,7 +275,12 @@ class Surveillance:
                     offres[o.cle] = o
         return list(offres.values()), bilan
 
-    def _log_decouverte(self, b: Boutique, analyse: Analyse) -> None:
+    def _log_decouverte(self, b: Boutique | Enseigne, analyse: Analyse) -> None:
+        if isinstance(b, Enseigne):
+            produits = ", ".join(sorted({f.item.nom for f in b.fiches.values()})) or "aucune fiche 30 ans"
+            log(f"🏬 {b.nom} en magasin : {len(b.magasins)} magasin(s) à moins de {b.zone.rayon_km:g} km de "
+                f"{b.zone.nom} · {len(b.fiches)} produit(s) suivi(s) : {produits} ({analyse.requetes} requête(s))")
+            return
         compte = Counter(o.item.nom for o in analyse.offres)
         resume = ", ".join(f"{n}× {nom}" if n > 1 else nom for nom, n in compte.most_common()) or "aucune fiche 30 ans"
         categories = f" · catégories {', '.join(b.categories_trouvees)}" if b.categories_trouvees else ""
@@ -280,7 +321,8 @@ class Surveillance:
                 bilan.en_stock += 1
             else:
                 bilan.rupture += 1
-            if premier or change:
+            # Stock en magasin : un couple magasin × produit sans stock n'encombre pas le journal.
+            if (premier or change) and (dispo or o.source != "magasin" or avant is True):
                 self._log_offre(o, dispo)
 
             derniere_alerte = precedent.get("alerte")
