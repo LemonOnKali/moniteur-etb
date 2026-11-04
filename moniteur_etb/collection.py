@@ -30,7 +30,7 @@ LANGUES_CONNUES = ("fr", "en", "jp", "kr", "cn")
 _RE_LANGUES = {
     "jp": re.compile(r"\b(japonais|japonaise|japanese|japan|japon|jap|jpn|jp)\b"),
     "kr": re.compile(r"\b(coreen|coreenne|korean|kor|kr)\b"),
-    "cn": re.compile(r"\b(chinois|chinoise|chinese|s chinese|t chinese|simplified|traditional|cn)\b"),
+    "cn": re.compile(r"\b(chinois|chinoise|chine|chinese|china|s chinese|t chinese|simplified|traditional|cn)\b"),
     "en": re.compile(r"\b(anglais|anglaise|english|eng|version en|en version|vo|uk|us)\b|\ben$"),
     "fr": re.compile(r"\b(francais|francaise|french|fra|vf|fr)\b"),
 }

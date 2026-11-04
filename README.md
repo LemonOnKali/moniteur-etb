@@ -70,6 +70,39 @@ ligne » ; l'alerte part dès qu'elle apparaît en stock.
 Hors de portée sans vrai navigateur : Fnac, Cdiscount, Smyths (anti-robot),
 Play-in (stock chargé en JavaScript), Pokémon Center.
 
+## Stock en magasin (Marseille + 20 km)
+
+En plus des sites, le moniteur regarde le **stock des magasins physiques**
+autour de Marseille (fichier `magasins.json`) et prévient dès qu'un magasin
+reçoit un produit de la gamme :
+
+> 🚨 **Collection Ultra-Premium Journée (Mentali)** en stock **en magasin** chez
+> **Micromania La Valentine** (4 pièce(s)) — adresse, distance, lien de la fiche.
+
+| Enseigne | Ce qu'on lit | Quantité | Magasins à moins de 20 km |
+|---|---|---|---|
+| Micromania | service « Retrait 1h » de la fiche produit | ✅ nombre de pièces | Terrasses du Port, Bonneveine, Grand Littoral, La Valentine, Avant Cap (Cabriès), Vitrolles, Aubagne |
+| E.Leclerc | offres « retrait magasin » par code-barres | ❌ disponible / pas disponible | Sormiou, Cabriès (Plan de Campagne), Vitrolles, Marignane |
+
+Micromania est vérifié toutes les 4 min, Leclerc toutes les 5 min (15
+références par code-barres, y compris les UPC avant leur sortie). Les produits
+Micromania sont retrouvés tout seuls sur sa page « 30 ans » : une fiche mise en
+ligne plus tard est suivie dès la découverte suivante (toutes les 15 min). Si
+une enseigne répond par une page anti-robot, elle est laissée tranquille
+quelques minutes avant de réessayer.
+
+Ce stock vient du logiciel de caisse de l'enseigne : il peut avoir quelques
+heures de retard sur le rayon (carton en réserve, mise en rayon le lendemain).
+Appelle le magasin ou réserve en « retrait » avant de te déplacer.
+
+**Changer de ville ou de rayon** : dans `magasins.json`, `zone` → `latitude`,
+`longitude` (clic droit sur Google Maps → coordonnées), `code_postal` et
+`rayon_km`.
+
+Auchan, JouéClub, Carrefour, King Jouet, Cultura, Fnac et Smyths ne sont pas
+suivis en magasin : leur stock par magasin n'est lisible qu'avec un vrai
+navigateur et un magasin choisi (session), ou leur site bloque les robots.
+
 ## Comment ça marche
 
 - GitHub Actions lance le moniteur toutes les 15 min ; chaque exécution
@@ -286,6 +319,7 @@ moniteur_etb/
   surveillance.py         cycles, décisions d'alerte, état
   discord.py              messages Discord (embeds groupés)
   http.py                 téléchargements, pauses par site
+  magasins.py             stock en magasin autour d'une zone (magasins.json)
   diagnostic.py           --diagnostic, --decouvrir, --liens
 tests/                    tests unitaires hors ligne
 ```

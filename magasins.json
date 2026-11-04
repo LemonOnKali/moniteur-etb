@@ -15,14 +15,10 @@
       "pages": [
         "https://www.micromania.fr/c/carte-pokemon-30-ans"
       ],
-      "recherche_url": "https://www.micromania.fr/on/demandware.store/Sites-Micromania-Site/fr_FR/Search-Show?q={q}",
-      "recherches": [
-        "pokemon 30 ans",
-        "pokemon ultra premium 30 ans"
-      ],
-      "intervalle_secondes": 180,
-      "ecart_secondes": 8,
-      "note": "Service « Retrait 1h » : magasins qui ont le produit et quantité en stock (vérifié)."
+      "recherches": [],
+      "intervalle_secondes": 240,
+      "ecart_secondes": 10,
+      "note": "Service « Retrait 1h » : magasins qui ont le produit et quantité en stock (vérifié). Produits lus sur la page « 30 ans » (une requête). Micromania bloque les rafales : 10 s entre deux requêtes."
     },
     {
       "nom": "E.Leclerc",

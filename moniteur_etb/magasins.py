@@ -31,8 +31,10 @@ from urllib.parse import quote, urlsplit, urlunsplit
 
 from .boutiques import Analyse, liens_fiches
 from .collection import Collection, Item, langue_acceptee
-from .http import ACCEPT_HTML, ErreurVerification, en_pause, telecharger, telecharger_json
+from .http import ACCEPT_HTML, PAUSES, ErreurVerification, en_pause, telecharger, telecharger_json
 from .modeles import Offre
+from .pages import page_anti_robot
+from .texte import texte_visible
 
 INTERVALLE_DEFAUT_S = 120.0
 RECHERCHES_DEFAUT = ["pokemon 30 ans"]
@@ -184,6 +186,17 @@ def joli_nom(nom: str) -> str:
     return "".join(sortie)
 
 
+def _json(url: str) -> Any:
+    """JSON d'un service d'enseigne. Une page HTML à la place (anti-robot) met le site en pause."""
+    try:
+        return telecharger_json(url, ajax=True, cadence="hote")
+    except ErreurVerification as err:
+        if str(err).startswith("réponse non JSON"):
+            duree = PAUSES.echec(urlsplit(url).hostname or "")
+            raise ErreurVerification(f"page anti-robot au lieu des données — pause {duree / 60:.0f} min") from None
+        raise
+
+
 # --------------------------------------------------------------------------- #
 # Lecteurs par enseigne
 # --------------------------------------------------------------------------- #
@@ -222,7 +235,7 @@ class Micromania:
             f"?showMap=false&products={quote(ref)}%3A1&radius={rayon}&postalCode={quote(e.zone.code_postal)}"
             + ("&isCC=true&isPDP=true" if en_stock else "")
         )
-        donnees = telecharger_json(url, ajax=True, cadence="hote")
+        donnees = _json(url)
         magasins = donnees.get("stores") if isinstance(donnees, dict) else None
         if not isinstance(magasins, list):
             raise ErreurVerification("réponse Micromania inattendue (pas de liste de magasins)")
@@ -267,8 +280,7 @@ class Leclerc:
     def magasins(self, e: Enseigne, ref: str, en_stock: bool) -> list[tuple[Magasin, int | None]]:
         z = e.zone
         if not en_stock:
-            donnees = telecharger_json(f"{e.racine}/api/rest/locator/pdv?lat={z.latitude}&long={z.longitude}&limit=30",
-                                       ajax=True, cadence="hote")
+            donnees = _json(f"{e.racine}/api/rest/locator/pdv?lat={z.latitude}&long={z.longitude}&limit=30")
             departements = donnees.get("list") if isinstance(donnees, dict) else None
             if not isinstance(departements, list):
                 raise ErreurVerification("réponse Leclerc inattendue (pas de liste de magasins)")
@@ -282,10 +294,7 @@ class Leclerc:
                         resultat.append((Magasin(id=str(s["signCode"]), nom=joli_nom(str(s.get("name") or s["signCode"])),
                                                  adresse=self._adresse(s.get("address"), "zipCode"), distance_km=distance), None))
             return resultat
-        donnees = telecharger_json(
-            f"{e.racine}/api/rest/offer/cnc-offer-pickups-by-ean/{quote(ref)}?lat={z.latitude}&long={z.longitude}&limit=30",
-            ajax=True, cadence="hote",
-        )
+        donnees = _json(f"{e.racine}/api/rest/offer/cnc-offer-pickups-by-ean/{quote(ref)}?lat={z.latitude}&long={z.longitude}&limit=30")
         departements = donnees.get("departments") if isinstance(donnees, dict) else None
         if not isinstance(departements, list):
             raise ErreurVerification("réponse Leclerc inattendue (pas de liste d'offres retrait)")
@@ -336,7 +345,14 @@ def _decouvrir(e: Enseigne, lecteur: Lecteur, collection: Collection, langues: f
                 break
             continue
         assert e.motif_fiche is not None
-        for f in liens_fiches(page, e.racine, e.motif_fiche):
+        liens = liens_fiches(page, e.racine, e.motif_fiche)
+        if not liens:
+            raison = page_anti_robot(page, texte_visible(page)) or "aucune fiche sur la page (blocage anti-robot ?)"
+            echecs += 1
+            duree = PAUSES.echec(urlsplit(url).hostname or "")
+            analyse.erreurs.append(f"{url} : {raison} — pause {duree / 60:.0f} min")
+            break
+        for f in liens:
             ref = lecteur.ref(f.url)
             if not ref or ref in trouvees:
                 continue

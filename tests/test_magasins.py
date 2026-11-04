@@ -109,6 +109,28 @@ class TestMicromania(unittest.TestCase):
         self.assertEqual(len(a.erreurs), 2)  # un message par produit, pas d'exception
         self.assertEqual(a.offres, [])
 
+    def test_page_anti_robot_met_le_site_en_pause(self):
+        from moniteur_etb import http
+
+        http.PAUSES.vider()
+        e = enseigne()
+        with actif(FauxWeb({"carte-pokemon-30-ans": "<html>Accès refusé</html>"})):
+            a = analyser_magasins(e, COLLECTION, frozenset({"fr"}), decouvrir=True)
+        self.assertEqual(len(a.erreurs), 1)
+        self.assertGreater(http.PAUSES.restant("www.micromania.fr"), 0)
+        http.PAUSES.vider()
+
+    def test_reponse_html_au_lieu_du_json(self):
+        from moniteur_etb import http, magasins
+
+        http.PAUSES.vider()
+        with mock.patch.object(magasins, "telecharger_json", side_effect=http.ErreurVerification("réponse non JSON (…)")):
+            with self.assertRaises(http.ErreurVerification) as ctx:
+                magasins.Micromania().magasins(enseigne(), "162657", en_stock=True)
+        self.assertIn("anti-robot", str(ctx.exception))
+        self.assertGreater(http.PAUSES.restant("www.micromania.fr"), 0)
+        http.PAUSES.vider()
+
     def test_configuration_invalide(self):
         with self.assertRaises(ValueError):
             charger_enseignes({"zone": {"nom": "X"}, "enseignes": []})

@@ -9,7 +9,7 @@ name: Tester les boutiques
 #   on veut extraire les liens marchands.
 # - "essai_minutes" : optionnel, fait tourner le vrai moniteur ce nombre de
 #   minutes, sans Discord, pour voir les cycles de vérification.
-# Sans option : diagnostic complet de boutiques.json et produits.json.
+# Sans option : diagnostic complet de boutiques.json, produits.json et magasins.json.
 on:
   workflow_dispatch:
     inputs:
@@ -51,13 +51,8 @@ jobs:
         if: inputs.ou != 'pc'
         with:
           python-version: "3.12"
-      - name: Sonde (temporaire)
-        if: inputs.decouvrir == 'sonde'
-        run: |
-          FICHIER_BOUTIQUES=aucun FICHIER_PRODUITS= python moniteur.py --diagnostic
-          FICHIER_BOUTIQUES=aucun FICHIER_PRODUITS= FICHIER_ETAT=etat-sonde.json DUREE_MINUTES=3 INTERVALLE_SECONDES=30 python moniteur.py
       - name: Tester des boutiques
-        if: inputs.decouvrir != '' && inputs.decouvrir != 'sonde'
+        if: inputs.decouvrir != ''
         env:
           BOUTIQUES: ${{ inputs.decouvrir }}
         # Découpage volontaire sur les espaces : une adresse par argument.
