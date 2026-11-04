@@ -7,6 +7,13 @@
     "code_postal": "13001",
     "note": "Centre de Marseille (Vieux-Port). Magasins à moins de rayon_km à vol d'oiseau."
   },
+  "items": [
+    "etb",
+    "upc-journee",
+    "upc-soiree",
+    "upc"
+  ],
+  "note_items": "Produits suivis en magasin (ids de collection.json). Retire la ligne « items » pour suivre toute la gamme.",
   "enseignes": [
     {
       "nom": "Micromania",
@@ -15,17 +22,20 @@
       "pages": [
         "https://www.micromania.fr/c/carte-pokemon-30-ans"
       ],
-      "recherches": [],
-      "intervalle_secondes": 240,
+      "recherches": [
+        "pokemon ultra premium"
+      ],
+      "intervalle_secondes": 120,
       "ecart_secondes": 10,
-      "note": "Service « Retrait 1h » : magasins qui ont le produit et quantité en stock (vérifié). Produits lus sur la page « 30 ans » (une requête). Micromania bloque les rafales : 10 s entre deux requêtes."
+      "note": "Service « Retrait 1h » : magasins qui ont le produit et nombre de pièces (vérifié). Produits lus sur la page « 30 ans » et la recherche « ultra premium » (UPC dès leur mise en ligne). 10 s entre deux requêtes.",
+      "recherche_url": "https://www.micromania.fr/on/demandware.store/Sites-Micromania-Site/fr_FR/Search-Show?q={q}"
     },
     {
       "nom": "E.Leclerc",
       "type": "leclerc",
       "url": "https://www.e.leclerc",
-      "intervalle_secondes": 180,
-      "note": "UPC et ETB : offres « retrait magasin » par code-barres toutes les 3 min (service de la fiche produit, vérifié). Pas de quantité chez Leclerc.",
+      "intervalle_secondes": 120,
+      "note": "ETB et UPC : offres « retrait magasin » par code-barres toutes les 2 min (service de la fiche produit, vérifié). Pas de quantité chez Leclerc.",
       "produits": [
         {
           "ref": "0196214155336",
@@ -44,87 +54,6 @@
           "nom": "Coffret Dresseur d'Élite 30 ans",
           "url": "https://www.e.leclerc/fp/pokemon-30a-coffret-dresseur-d-elite-0196214144835",
           "item": "etb"
-        }
-      ]
-    },
-    {
-      "nom": "E.Leclerc",
-      "type": "leclerc",
-      "url": "https://www.e.leclerc",
-      "intervalle_secondes": 900,
-      "note": "Reste de la gamme toutes les 15 min : Leclerc limite son débit (une requête toutes les 12 s, partagée avec produits.json).",
-      "produits": [
-        {
-          "ref": "0196214147430",
-          "nom": "Collection Premium Métamorph 30 ans",
-          "url": "https://www.e.leclerc/fp/coffret-premium-8-boosters-0196214147430",
-          "item": "metamorph-premium"
-        },
-        {
-          "ref": "0196214145221",
-          "nom": "Bundle 6 boosters 30 ans",
-          "url": "https://www.e.leclerc/fp/pokemon-30a-bundle-6-boosters-0196214145221",
-          "item": "bundle"
-        },
-        {
-          "ref": "0196214147102",
-          "nom": "Coffret Nymphali-ex 30 ans",
-          "url": "https://www.e.leclerc/fp/pokemon-30a-coffret-nymphali-ex-0196214147102",
-          "item": "coffret-ex"
-        },
-        {
-          "ref": "0196214147164",
-          "nom": "Coffret Amphinobi-ex 30 ans",
-          "url": "https://www.e.leclerc/fp/pokemon-30a-coffret-amphinobi-ex-0196214147164",
-          "item": "coffret-ex"
-        },
-        {
-          "ref": "0196214146907",
-          "nom": "Pokébox 30 ans",
-          "url": "https://www.e.leclerc/fp/pokemon-30a-pokebox-0196214146907",
-          "item": "pokebox"
-        },
-        {
-          "ref": "0196214146976",
-          "nom": "Pokébox Nymphali-ex 30 ans",
-          "url": "https://www.e.leclerc/fp/pokemon-30a-pokebox-nymphali-ex-0196214146976",
-          "item": "pokebox"
-        },
-        {
-          "ref": "0196214147225",
-          "nom": "Collection Poster 30 ans",
-          "url": "https://www.e.leclerc/fp/pokemon-30a-coffret-poster-0196214147225",
-          "item": "poster"
-        },
-        {
-          "ref": "0196214145153",
-          "nom": "Collection Classeur 30 ans",
-          "url": "https://www.e.leclerc/fp/pokemon-30a-collection-classeur-0196214145153",
-          "item": "classeur"
-        },
-        {
-          "ref": "0196214146297",
-          "nom": "Mini Tin 30 ans",
-          "url": "https://www.e.leclerc/fp/pokemon-30a-mini-tin-modele-aleatoire-0196214146297",
-          "item": "mini-tin"
-        },
-        {
-          "ref": "0196214144972",
-          "nom": "Collection Autocollants (Tripack) 30 ans",
-          "url": "https://www.e.leclerc/fp/pokemon-30a-tripack-collection-autocollant-0196214144972",
-          "item": "autocollants"
-        },
-        {
-          "ref": "0196214152311",
-          "nom": "Duopack Évoli 30 ans",
-          "url": "https://www.e.leclerc/fp/pokemon-30a-pack-2-boosters-0196214152311",
-          "item": "duopack"
-        },
-        {
-          "ref": "0196214139718",
-          "nom": "Coffret Journée Pokémon 2026 (30 ans)",
-          "url": "https://www.e.leclerc/fp/pokemon-coffret-pokemon-day-26-3b-carte-exclu-0196214139718",
-          "item": "pokemon-day"
         }
       ]
     }

@@ -93,6 +93,19 @@ class TestMicromania(unittest.TestCase):
         self.assertEqual(o.cle, "magasin:micromania:mv:163001")
         self.assertIn("8,9 km", o.detail)
 
+    def test_seulement_etb_et_upc(self):
+        e = charger_enseignes({
+            "zone": {"nom": "Marseille", "latitude": 43.2965, "longitude": 5.3698, "rayon_km": 20, "code_postal": "13001"},
+            "items": ["etb", "upc-journee", "upc-soiree", "upc"],
+            "enseignes": [{"nom": "Micromania", "type": "micromania", "pages": ["https://www.micromania.fr/c/carte-pokemon-30-ans"]}],
+        })[0]
+        with actif(FauxWeb(routes([]))):
+            a = analyser_magasins(e, COLLECTION, frozenset({"fr"}), decouvrir=True)
+        self.assertEqual(sorted(e.fiches), ["163001"])  # l'UPC ; le coffret Amphinobi n'est pas suivi
+        self.assertEqual({o.item.id for o in a.offres}, {"upc-journee"})
+        with self.assertRaises(ValueError):
+            charger_enseignes({"zone": {"latitude": 1, "longitude": 2}, "items": "etb", "enseignes": []})
+
     def test_quantite_nulle_ou_indisponible_ignoree(self):
         e = enseigne()
         en_stock = [dict(VALENTINE, availableInStore=False, preferredStoreStock=0), dict(TERRASSES, preferredStoreStock=0)]
@@ -142,6 +155,7 @@ class TestMicromania(unittest.TestCase):
             enseignes = charger_enseignes(json.load(f))
         self.assertTrue(enseignes)
         self.assertTrue(all(e.zone.rayon_km == 20 for e in enseignes))
+        self.assertTrue(all(e.items == {"etb", "upc-journee", "upc-soiree", "upc"} for e in enseignes))
 
 
 PDV = {"count": 1, "list": [{"code": "13", "name": "Bouches-du-Rhône", "stores": [

@@ -262,7 +262,9 @@ class Surveillance:
                     bilan.decouvertes += 1
                     self._log_decouverte(origine, analyse)
                 if analyse.erreurs:
-                    bilan.erreurs[origine.nom] = " | ".join(analyse.erreurs)
+                    # Même nom pour la boutique en ligne et l'enseigne en magasin (Micromania) : clés distinctes.
+                    source = f"{origine.nom} en magasin" if isinstance(origine, Enseigne) else origine.nom
+                    bilan.erreurs[source] = " | ".join(analyse.erreurs)
                 for o in analyse.offres:
                     offres.setdefault(o.cle, o)
             else:
