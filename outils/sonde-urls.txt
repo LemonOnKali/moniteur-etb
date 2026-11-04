@@ -1,7 +1,4 @@
-https://www.micromania.fr/on/demandware.store/Sites-Micromania-Site/fr_FR/Search-Show?q=manette+ps5
-pause 8
-json:https://www.micromania.fr/on/demandware.store/Sites-Micromania-Site/fr_FR/Stores-InventorySearch?showMap=false&products={pid}:1&radius=30&postalCode=13001&isCC=true&isPDP=true || large:300:"stores": \[\{
-https://www.e.leclerc/fp/coffret-premium-8-boosters-0196214147430 || uniq:/_assets/[A-Za-z0-9_.-]+\.js
-https://www.auchan.fr/recherche?text=pokemon+30+ans || uniq:href="[^"]*\?[^"]{3,200}"
-https://www.joueclub.fr/contenu/nos-magasins.html || uniq:[^"<>{}]{0,60}(?:Marseille|Aubagne|Vitrolles|Cabri|Pennes|Marignane)[^"<>{}]{0,80}
-https://www.joueclub.fr/contenu/nos-magasins.html || uniq:"[a-zA-Z]*[Pp]ath":"[^"]+"|[a-z/]*\.php[^"' ]*
+https://www.auchan.fr/recherche?text=pokemon&search_availableinstore=42190f182d7ad52d4ad42d8b922d811e9074b5a7 || large:250:"selected":true|"total[A-Za-z]*":[0-9]+|nbResults|product-thumbnail__title
+https://www.auchan.fr/recherche?text=pokemon || uniq:"total[A-Za-z]*":[0-9]+|data-total[^ ]*
+https://www.e.leclerc/_assets/BuyBoxCncOffersCountHandler.CuRpAeOH.js || large:200:api|offer|cnc|store
+https://www.e.leclerc/_assets/HeaderSessionStoreName.geucz8nv.js || large:200:api|store|cookie|localStorage
