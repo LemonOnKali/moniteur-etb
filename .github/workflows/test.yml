@@ -51,8 +51,11 @@ jobs:
         if: inputs.ou != 'pc'
         with:
           python-version: "3.12"
+      - name: Sonde (temporaire)
+        if: inputs.decouvrir == 'sonde'
+        run: python outils/sonde.py $(grep -v '^#' outils/sonde-urls.txt)
       - name: Tester des boutiques
-        if: inputs.decouvrir != ''
+        if: inputs.decouvrir != '' && inputs.decouvrir != 'sonde'
         env:
           BOUTIQUES: ${{ inputs.decouvrir }}
         # Découpage volontaire sur les espaces : une adresse par argument.
