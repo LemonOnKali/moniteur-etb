@@ -17,7 +17,7 @@ from . import etat as etat_mod
 from .boutiques import Analyse, Boutique, analyser
 from .collection import Collection
 from .discord import BLEU, ORANGE, Discord, embed_offre, embed_rupture, resume_alertes, salon_offre
-from .http import regler_ecart
+from .http import en_pause, regler_ecart
 from .magasins import Enseigne, analyser_magasins, charger_enseignes
 from .modeles import Offre, cle_url
 from .pages import Produit, verifier
@@ -272,6 +272,10 @@ class Surveillance:
                 o = futur.result()
                 if o.dispo is None:
                     bilan.erreurs[f"{o.boutique} · {o.titre}"] = o.erreur
+                    if en_pause(origine.url):
+                        # Fiche non lue : elle repasse dès la fin de la pause, sans attendre
+                        # son intervalle (10 min chez Carrefour). Aucune requête pendant la pause.
+                        origine.derniere_verification = None
                 # Une fiche listée à la main prime sur la même fiche trouvée dans le catalogue.
                 if o.dispo is not None or o.cle not in offres:
                     offres[o.cle] = o

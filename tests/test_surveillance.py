@@ -184,6 +184,68 @@ class TestFileEtPause(unittest.TestCase):
         http.PAUSES.vider()
 
 
+class TestRechercheLimitee(unittest.TestCase):
+    def _reponse(self, code):
+        from urllib.error import HTTPError
+
+        return HTTPError("https://limite.test/s", code, "Refus", {}, None)
+
+    def test_429_sur_une_recherche_ne_bloque_pas_le_site(self):
+        from moniteur_etb import http
+
+        http.PAUSES.vider()
+        http.regler_ecart("limite.test", 0.01)
+        with mock.patch("moniteur_etb.http.urlopen", side_effect=self._reponse(429)):
+            with self.assertRaises(http.ErreurHTTP):
+                http.telecharger("https://limite.test/s", cadence="hote", pause_429=False)
+        self.assertEqual(http.PAUSES.restant("limite.test"), 0)
+        http.PAUSES.vider()
+
+    def test_403_sur_une_recherche_reste_un_blocage(self):
+        from moniteur_etb import http
+
+        http.PAUSES.vider()
+        http.regler_ecart("limite.test", 0.01)
+        with mock.patch("moniteur_etb.http.urlopen", side_effect=self._reponse(403)):
+            with self.assertRaises(http.ErreurHTTP):
+                http.telecharger("https://limite.test/s", cadence="hote", pause_429=False)
+        self.assertGreater(http.PAUSES.restant("limite.test"), 0)
+        http.PAUSES.vider()
+
+
+class TestFicheSauteePendantUnePause(unittest.TestCase):
+    def _verifier(self, en_pause):
+        from moniteur_etb import http
+        from moniteur_etb.pages import Produit
+
+        http.PAUSES.vider()
+        if en_pause:
+            http.PAUSES.echec("carrefour.test")
+        p = Produit(nom="ETB 30 ans", url="https://carrefour.test/p/etb", intervalle=600)
+        s = Surveillance(Reglages(), COLLECTION, [p], [], FauxDiscord(), {})
+        erreur = Offre(cle="etb", boutique="Carrefour", titre="ETB", url=p.url, item=COLLECTION.item("etb"),
+                       dispo=None, erreur="site en pause")
+        with ThreadPoolExecutor(max_workers=1) as ex, mock.patch.object(s, "offre_produit", return_value=erreur):
+            s.verifier_tout(ex)
+        http.PAUSES.vider()
+        return p
+
+    def test_fiche_relue_des_la_fin_de_la_pause(self):
+        self.assertTrue(self._verifier(en_pause=True).verification_due())
+
+    def test_autre_erreur_garde_son_intervalle(self):
+        self.assertFalse(self._verifier(en_pause=False).verification_due())
+
+
+class TestRelaisGitHub(unittest.TestCase):
+    def test_pas_de_resume_discord_au_relais(self):
+        env = {"GITHUB_EVENT_NAME": "workflow_dispatch", "EVENEMENT": "relais"}
+        with mock.patch.dict(os.environ, env):
+            self.assertEqual(Reglages.depuis_env().evenement_github, "relais")
+        with mock.patch.dict(os.environ, {**env, "EVENEMENT": ""}):
+            self.assertEqual(Reglages.depuis_env().evenement_github, "workflow_dispatch")
+
+
 class TestDecouvertesEtalees(unittest.TestCase):
     def test_trois_par_cycle(self):
         from moniteur_etb import surveillance as surv

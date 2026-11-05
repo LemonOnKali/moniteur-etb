@@ -399,9 +399,13 @@ def liens_fiches(page: str, racine: str, motif: re.Pattern[str]) -> list[Fiche]:
     ]
 
 
-def _html_page(b: Boutique, url: str) -> list[Fiche]:
-    """Plateforme html : page de recherche ou de catégorie d'une enseigne."""
-    page = telecharger(url, accept=ACCEPT_HTML, cadence="hote").texte()
+def _html_page(b: Boutique, url: str, recherche: bool = False) -> list[Fiche]:
+    """Plateforme html : page de recherche ou de catégorie d'une enseigne.
+
+    Carrefour limite ses recherches (429) mais sert ses fiches normalement : un 429
+    sur une recherche ne met donc pas tout le site en pause.
+    """
+    page = telecharger(url, accept=ACCEPT_HTML, cadence="hote", pause_429=not recherche).texte()
     assert b.motif_fiche is not None
     fiches = liens_fiches(page, b.racine, b.motif_fiche)
     if not fiches:
@@ -489,7 +493,7 @@ def analyser(b: Boutique, collection: Collection, langues: frozenset[str], decou
             if genre == "page":
                 return _html_page(b, valeur)
             assert b.recherche_url is not None
-            return _html_page(b, b.recherche_url.replace("{q}", quote(valeur)))
+            return _html_page(b, b.recherche_url.replace("{q}", quote(valeur)), recherche=True)
         if b.detectee == "shopify":
             return _shopify_source(b, source, filtre_variante)
         if b.detectee == "woocommerce":

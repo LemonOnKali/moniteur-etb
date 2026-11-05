@@ -214,12 +214,13 @@ def _entetes(accept: str, ajax: bool) -> dict[str, str]:
 
 
 def telecharger(url: str, accept: str = "*/*", ajax: bool = False, pause: bool = True,
-                cadence: str | None = None) -> Reponse:
+                cadence: str | None = None, pause_429: bool = True) -> Reponse:
     """Télécharge `url`. Réessaie une fois sur erreur réseau ou 5xx.
 
     Lève ErreurVerification avec un message lisible en cas d'échec, et met
     l'hôte en pause s'il signale une limite de débit ou un blocage (sauf
-    `pause=False` : limite propre à une API, le reste du site reste joignable).
+    `pause=False` : limite propre à une API, le reste du site reste joignable ;
+    `pause_429=False` : idem pour un 429 seulement, un 403 reste un blocage du site).
     `cadence` : "shopify" fait passer la requête par la file commune Shopify,
     "hote" par celle du site (pages HTML des grandes enseignes).
     """
@@ -257,7 +258,8 @@ def telecharger(url: str, accept: str = "*/*", ajax: bool = False, pause: bool =
             # File commune Shopify : un 429 vient de la limite partagée, déjà gérée en
             # ralentissant la file ; inutile de bloquer cette boutique en plus. Une
             # enseigne à file propre (« hote ») qui répond 429 est mise en pause.
-            if err.code in CODES_PAUSE and pause and not (cadence == "shopify" and err.code == 429):
+            limite_seule = err.code == 429 and (cadence == "shopify" or not pause_429)
+            if err.code in CODES_PAUSE and pause and not limite_seule:
                 duree = PAUSES.echec(hote)
                 raise ErreurHTTP(err.code, f"{err.reason} — pause {duree / 60:.0f} min") from err
             raise ErreurHTTP(err.code, str(err.reason)) from err

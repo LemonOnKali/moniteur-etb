@@ -73,6 +73,7 @@ class Reglages:
             fichier_magasins=_fichier_optionnel("FICHIER_MAGASINS", "magasins.json"),
             fichier_collection=os.environ.get("FICHIER_COLLECTION", "collection.json"),
             fichier_etat=os.environ.get("FICHIER_ETAT", "etat.json"),
-            evenement_github=os.environ.get("GITHUB_EVENT_NAME", ""),
+            # EVENEMENT=relais : run lancé par le run précédent, pas de résumé Discord.
+            evenement_github=os.environ.get("EVENEMENT") or os.environ.get("GITHUB_EVENT_NAME", ""),
             max_workers=int(_nombre("MAX_WORKERS", 32)),
         )

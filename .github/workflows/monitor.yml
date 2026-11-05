@@ -2,12 +2,17 @@ name: Moniteur de stock
 
 on:
   schedule:
-    # Toutes les 15 min (UTC). GitHub retarde ou saute souvent les crons :
-    # chaque exécution surveille donc pendant ~6 h (le maximum autorisé) et
-    # la suivante, mise en attente par le groupe de concurrence, prend le
-    # relais dès qu'elle se termine. Couverture quasi continue.
+    # Filet de sécurité. GitHub retarde ou saute souvent les crons (un
+    # déclenchement toutes les 4 à 8 h en pratique) : c'est chaque exécution
+    # qui lance la suivante en se terminant (étape « Passer le relais »). Le
+    # cron ne sert qu'à repartir si la chaîne casse (run annulé ou en échec).
     - cron: "*/15 * * * *"
   workflow_dispatch:
+    inputs:
+      relais:
+        description: "Lancé par le run précédent (pas de résumé Discord)"
+        type: boolean
+        default: false
 
 # Une seule exécution à la fois ; la suivante attend au lieu d'annuler.
 concurrency:
@@ -16,6 +21,7 @@ concurrency:
 
 permissions:
   contents: read
+  actions: write  # étape « Passer le relais »
 
 jobs:
   moniteur:
@@ -64,6 +70,7 @@ jobs:
           INTERVALLE_SECONDES: ${{ vars.INTERVALLE_SECONDES || '30' }}
           DECOUVERTE_MINUTES: ${{ vars.DECOUVERTE_MINUTES || '15' }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
+          EVENEMENT: ${{ inputs.relais && 'relais' || '' }}
           PYTHONUNBUFFERED: "1"
         run: python moniteur.py
 
@@ -73,3 +80,12 @@ jobs:
         with:
           path: etat.json
           key: etat-moniteur-${{ github.run_id }}
+
+      # La suivante attend dans le groupe de concurrence et démarre dès la fin de
+      # celle-ci : pas de trou. Rien si le run a échoué ou été annulé (le cron
+      # reprend), pour ne pas boucler sur une erreur ni relancer un arrêt voulu.
+      - name: Passer le relais
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run monitor.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" -f relais=true
