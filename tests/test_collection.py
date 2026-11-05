@@ -12,6 +12,7 @@ CAS = [
     ("Pokémon : Coffret Dresseur d’élite 30ᵉ Anniversaire du JCC Pokémon (1 Carte Promo, 9 boosters)", "etb"),
     ("Pokemon 30A Coffret Dresseur d Elite", "etb"),
     ("ETB ME05.5 Pikachu", "etb"),
+    ("Pokemon Boîte d'entraînement Elite 30e anniversaire", "etb"),  # intitulé Auchan
     ("Coffret ETB 30 ans + protection offerte", "etb"),
     ("ETB 30 ans Pokémon Center", "etb-pokemon-center"),
     ("Pokémon - Bundle 6 Boosters 30ème Anniversaire", "bundle"),

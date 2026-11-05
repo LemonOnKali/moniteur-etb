@@ -352,7 +352,10 @@ def _decouvrir(e: Enseigne, lecteur: Lecteur, collection: Collection, langues: f
         assert e.motif_fiche is not None
         liens = liens_fiches(page, e.racine, e.motif_fiche)
         if not liens:
-            raison = page_anti_robot(page, texte_visible(page)) or "aucune fiche sur la page (blocage anti-robot ?)"
+            raison = page_anti_robot(page, texte_visible(page))
+            if not raison and url not in e.pages:
+                continue  # recherche sans résultat : produit pas encore en ligne, pas un blocage
+            raison = raison or "aucune fiche sur la page (blocage anti-robot ?)"
             echecs += 1
             duree = PAUSES.echec(urlsplit(url).hostname or "")
             analyse.erreurs.append(f"{url} : {raison} — pause {duree / 60:.0f} min")

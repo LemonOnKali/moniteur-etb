@@ -58,10 +58,10 @@ Boutiques couvertes aujourd'hui (≈ 250 fiches 30 ans suivies) :
 | Shopify (catalogue entier) | LorenZone, PokeMael, Collect Avenue, Poke-Geek, Hikaru Distribution, Outpost Brussels, TradingCards XXX, VCollect, Cartes-Pokemon.com |
 | WooCommerce (catalogue entier) | Ecardstore, PixelHeart, Guizette Family, GoRetroGaming, PokeShop.cards |
 | PrestaShop (catalogue entier) | Pokezenith, Foxchip, BCD Jeux, Pokesumo, 1001hobbies, Fantastik, Le Monde Imaginaire, Pokémon Carte, Espace Kids |
-| Grandes enseignes (recherche ou page « 30 ans », puis fiche par fiche) | Auchan, JouéClub, Micromania |
+| Grandes enseignes (recherche ou page « 30 ans », puis fiche par fiche) | JouéClub, Micromania |
 | Grandes enseignes par code-barres (15 références dont les 2 UPC) | E.Leclerc (`produits.json`), Carrefour (`produits-pc.json`) |
 | Fiches (`produits.json`) | UltraJeux, Au Dé Mon du Jeu, Dstrib, Ludocortex, Plaza TCG, Les Gentlemen du Jeu, Blazing Tail |
-| Depuis le PC (`boutiques-pc.json`, `produits-pc.json`) | Carrefour, King Jouet, Cultura (recherche), Amazon (ETB, UPC, Mini Tins), Courses U, MediaMarkt |
+| Depuis le PC (`boutiques-pc.json`, `produits-pc.json`) | Carrefour, Auchan, King Jouet, Cultura (recherche), Amazon (ETB, UPC, Mini Tins), Courses U, MediaMarkt |
 
 Les UPC (et toute fiche « à venir ») sont suivies avant même leur mise en ligne :
 tant que l'enseigne n'a pas publié la fiche, elle compte comme « pas encore en
@@ -111,8 +111,10 @@ navigateur et un magasin choisi (session), ou leur site bloque les robots.
 
 ## Comment ça marche
 
-- GitHub Actions lance le moniteur toutes les 15 min ; chaque exécution
-  surveille ~6 h et la suivante prend le relais : couverture continue.
+- Sur GitHub Actions, chaque exécution surveille ~6 h puis lance elle-même la
+  suivante (étape « Passer le relais ») : couverture continue. Le cron n'est
+  qu'un filet de sécurité, car GitHub ne le déclenche que toutes les 4 à 8 h :
+  après un run annulé à la main, relance *Run workflow* pour repartir tout de suite.
 - **Vérification toutes les 30 s**, toutes les boutiques **en parallèle**. Une
   boutique entière ne coûte que 1 à 3 requêtes par cycle (catégorie Shopify,
   liste d'ids WooCommerce, recherche PrestaShop).
@@ -125,7 +127,9 @@ navigateur et un magasin choisi (session), ou leur site bloque les robots.
   plafond). L'état est conservé entre les exécutions : pas de doublon, et
   jamais deux alertes à moins de 10 min pour une même fiche.
 - Un site qui bloque (403/429) ou ne répond pas est mis **en pause** (2 min,
-  puis 4, 8… 30 min au plus) au lieu d'être martelé.
+  puis 4, 8… 30 min au plus) au lieu d'être martelé. Les fiches sautées sont
+  relues dès la fin de la pause. Un 429 sur une *recherche* ne bloque pas les
+  fiches du site, et une recherche sans résultat n'est pas un blocage.
 - Filtre de langue : cartes **françaises** par défaut (variable `LANGUES`).
 
 ### Sur Discord
@@ -285,8 +289,9 @@ produit qui correspond l'emporte, les plus précis sont donc en premier.
 
 ## Lancer le moniteur sur ton PC
 
-Amazon, Carrefour, King Jouet, Cultura, Courses U et MediaMarkt bloquent les
-serveurs GitHub mais répondent depuis une box internet. Sur ton PC, le
+Amazon, Carrefour, Auchan, Cultura, Courses U et MediaMarkt bloquent les
+serveurs GitHub mais répondent depuis une box internet (King Jouet peut
+refuser aussi depuis une box : 403, il est alors laissé en pause). Sur ton PC, le
 moniteur surveille ces grandes enseignes (`produits-pc.json`,
 `boutiques-pc.json`) ; les boutiques spécialisées et E.Leclerc restent suivies
 24 h/24 par GitHub. Les alertes arrivent sur le même Discord, sans doublon.
@@ -334,9 +339,9 @@ encore disponible », sans erreur, et l'alerte part dès qu'elle est en vente.
 
 **Variante : runner GitHub.** Le workflow *Moniteur de stock (PC)* fait la même
 chose à travers un runner auto-hébergé (*Settings → Actions → Runners → New
-self-hosted runner*, Windows, « run as service » : `Y`), lancé depuis l'onglet
-*Actions*. N'utilise pas le runner et `lancer-pc.bat` en même temps (alertes
-en double). *Tester les boutiques* avec `ou = pc` montre ce que chaque enseigne
+self-hosted runner*, Windows, « run as service » : `Y`), lancé à la main depuis
+l'onglet *Actions* (pas de cron). N'utilise pas le runner et `lancer-pc.bat` en
+même temps (alertes en double). *Tester les boutiques* avec `ou = pc` montre ce que chaque enseigne
 répond depuis chez toi.
 
 Fnac, Cdiscount et Smyths exigent un vrai navigateur (Datadome, PerimeterX) et

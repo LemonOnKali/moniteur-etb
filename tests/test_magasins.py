@@ -133,6 +133,22 @@ class TestMicromania(unittest.TestCase):
         self.assertGreater(http.PAUSES.restant("www.micromania.fr"), 0)
         http.PAUSES.vider()
 
+    def test_recherche_sans_resultat_ne_met_pas_le_site_en_pause(self):
+        """Micromania répond « 0 article » tant que les UPC ne sont pas en ligne : ce
+        n'est pas un blocage, le stock des fiches connues doit rester vérifié."""
+        from moniteur_etb import http
+
+        http.PAUSES.vider()
+        e = enseigne()
+        e.recherche_url = "https://www.micromania.fr/search?q={q}"
+        e.recherches = ["pokemon ultra premium"]
+        with actif(FauxWeb({**routes([]), "search?q=": "<html>" + "Résultats pokemon ultra premium : 0 article. " * 20 + "</html>"})):
+            a = analyser_magasins(e, COLLECTION, frozenset({"fr"}), decouvrir=True)
+        self.assertEqual(a.erreurs, [])
+        self.assertEqual(http.PAUSES.restant("www.micromania.fr"), 0)
+        self.assertEqual(sorted(e.fiches), ["162657", "163001"])
+        self.assertEqual(len(a.offres), 4)
+
     def test_reponse_html_au_lieu_du_json(self):
         from moniteur_etb import http, magasins
 

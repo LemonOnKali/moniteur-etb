@@ -7,9 +7,9 @@ name: Moniteur de stock (PC)
 #
 # Installation du runner : Settings → Actions → Runners → New self-hosted runner.
 
+# Lancement manuel seulement : un cron remplirait la file d'attente pour un
+# runner éteint, et ferait doublon avec lancer-pc.bat s'il se rallumait.
 on:
-  schedule:
-    - cron: "*/15 * * * *"
   workflow_dispatch:
 
 concurrency:

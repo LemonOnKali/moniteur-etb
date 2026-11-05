@@ -27,7 +27,7 @@ class FauxWeb:
         return self._trouver(url)
 
     def telecharger(self, url: str, accept: str = "*/*", ajax: bool = False, pause: bool = True,
-                    cadence: str | None = None) -> Reponse:
+                    cadence: str | None = None, pause_429: bool = True) -> Reponse:
         corps = self._trouver(url)
         texte = corps if isinstance(corps, str) else json.dumps(corps)
         return Reponse(code=200, corps=texte.encode(), charset="utf-8", url=url, type="text/html")
