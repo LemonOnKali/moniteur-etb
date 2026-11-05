@@ -160,8 +160,12 @@ def main(argv: list[str] | None = None) -> int:
         f"toutes les {reglages.intervalle_secondes:.0f} s pendant {reglages.duree_minutes:.0f} min, "
         f"langues {','.join(sorted(reglages.langues))}"
     )
-    if not reglages.discord_webhook:
+    if not discord.webhook:
         log("⚠️  DISCORD_WEBHOOK n'est pas défini : les alertes seront seulement affichées ici.")
+    else:
+        dedies = ", ".join(sorted(discord.salons)) or "aucun"
+        log(f"Discord : salons dédiés {dedies} ; le reste dans le salon par défaut"
+            + ("" if discord.defaut else " (aucun salon par défaut défini)"))
     surveillance = Surveillance(reglages, collection, produits, boutiques, discord, etat.charger(reglages.fichier_etat),
                                 enseignes)
     return executer(surveillance, une_fois=args.une_fois)
