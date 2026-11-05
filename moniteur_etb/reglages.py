@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 def _nombre(nom: str, defaut: float) -> float:
@@ -32,6 +32,7 @@ def _booleen(nom: str) -> bool:
 class Reglages:
     discord_webhook: str = ""
     discord_mention: str = ""
+    discord_salons: dict[str, str] = field(default_factory=dict)  # DISCORD_WEBHOOK_UPC, _ETB, _MAGASINS…
     duree_minutes: float = 20.0
     intervalle_secondes: float = 30.0
     decouverte_minutes: float = 15.0  # nouvelle recherche des fiches 30 ans dans chaque boutique
@@ -54,6 +55,11 @@ class Reglages:
         return cls(
             discord_webhook=(os.environ.get("DISCORD_WEBHOOK") or "").strip(),
             discord_mention=(os.environ.get("DISCORD_MENTION") or "").strip(),
+            discord_salons={
+                salon: (os.environ.get(f"DISCORD_WEBHOOK_{salon.upper()}") or "").strip()
+                for salon in ("upc", "etb", "magasins", "autres", "journal")
+                if (os.environ.get(f"DISCORD_WEBHOOK_{salon.upper()}") or "").strip()
+            },
             duree_minutes=_nombre("DUREE_MINUTES", 20.0),
             intervalle_secondes=max(5.0, _nombre("INTERVALLE_SECONDES", 30.0)),
             decouverte_minutes=max(1.0, _nombre("DECOUVERTE_MINUTES", 15.0)),

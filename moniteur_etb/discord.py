@@ -24,27 +24,70 @@ MAX_EMBEDS = 10  # limite Discord par message
 MAX_CARACTERES_EMBEDS = 5800  # limite Discord : 6000 pour l'ensemble des embeds d'un message
 
 
+# Salons du serveur : chaque type d'alerte peut avoir son webhook (DISCORD_WEBHOOK_UPC…).
+# Un salon sans webhook retombe sur DISCORD_WEBHOOK.
+SALONS = {
+    "upc": "UPC (Ultra-Premium) en ligne",
+    "etb": "ETB (Coffret Dresseur d'Élite) en ligne",
+    "magasins": "stock en magasin autour de la zone",
+    "autres": "reste de la gamme 30 ans en ligne",
+    "journal": "lancement du moniteur, résumé, sources en erreur",
+}
+
+
+def salon_offre(offre: Offre) -> str:
+    """Salon d'une alerte : magasins, upc, etb ou autres."""
+    if offre.source == "magasin":
+        return "magasins"
+    if offre.item.id.startswith("upc"):
+        return "upc"
+    if offre.item.id.startswith("etb"):
+        return "etb"
+    return "autres"
+
+
 def _log(message: str) -> None:
     print(f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] {message}", flush=True)
 
 
 class Discord:
-    def __init__(self, webhook: str, mention: str = "", timeout: float = 15.0):
-        self.webhook = webhook
+    def __init__(self, webhook: str, mention: str = "", timeout: float = 15.0, salons: dict[str, str] | None = None):
+        self.defaut = webhook
+        self.salons = {k: v for k, v in (salons or {}).items() if v}  # salon → webhook propre
         self.mention = mention
         self.timeout = timeout
         self.dernier_code = 0  # code HTTP de la dernière réponse de Discord
 
-    def poster(self, charge: dict[str, Any]) -> bool:
-        """Envoie une charge JSON au webhook. Gère le rate-limit Discord (429)."""
-        if not self.webhook:
+    @property
+    def webhook(self) -> str:
+        """Un webhook est configuré (salon par défaut ou au moins un salon dédié)."""
+        return self.defaut or next(iter(self.salons.values()), "")
+
+    def url(self, salon: str = "") -> str:
+        return self.salons.get(salon) or self.defaut
+
+    def poster(self, charge: dict[str, Any], salon: str = "") -> bool:
+        """Envoie une charge JSON au webhook du salon. Gère le rate-limit Discord (429).
+
+        Webhook du salon supprimé ou invalide (401/404) : le message part dans le
+        salon par défaut plutôt que d'être perdu.
+        """
+        url = self.url(salon)
+        ok = self._poster(url, charge)
+        if not ok and url != self.defaut and self.defaut and self.dernier_code in (401, 404):
+            _log(f"Discord : webhook du salon « {salon} » invalide, message envoyé dans le salon par défaut")
+            ok = self._poster(self.defaut, charge)
+        return ok
+
+    def _poster(self, url: str, charge: dict[str, Any]) -> bool:
+        if not url:
             _log(f"(DISCORD_WEBHOOK absent, message non envoyé) {charge.get('content', '')!r}")
             return False
         corps = json.dumps(charge).encode("utf-8")
         entetes = {"Content-Type": "application/json", "User-Agent": UA_DISCORD}
         for tentative in range(1, 5):
             try:
-                requete = Request(self.webhook, data=corps, headers=entetes, method="POST")
+                requete = Request(url, data=corps, headers=entetes, method="POST")
                 with urlopen(requete, timeout=self.timeout) as reponse:
                     self.dernier_code = reponse.status
                     if 200 <= reponse.status < 300:
@@ -74,12 +117,12 @@ class Discord:
             time.sleep(1.5 * tentative)
         return False
 
-    def texte(self, contenu: str, mention: bool = False) -> bool:
+    def texte(self, contenu: str, mention: bool = False, salon: str = "") -> bool:
         if mention and self.mention:
             contenu = f"{self.mention} {contenu}"
-        return self.poster({"content": contenu[:2000], "allowed_mentions": {"parse": ["everyone", "roles", "users"]}})
+        return self.poster({"content": contenu[:2000], "allowed_mentions": {"parse": ["everyone", "roles", "users"]}}, salon)
 
-    def embeds(self, contenu: str, embeds: list[dict[str, Any]], mention: bool = False) -> list[bool]:
+    def embeds(self, contenu: str, embeds: list[dict[str, Any]], mention: bool = False, salon: str = "") -> list[bool]:
         """Envoie des embeds par paquets (10 par message, 6000 caractères au plus).
 
         Renvoie, pour chaque embed, si son message est bien parti.
@@ -104,12 +147,12 @@ class Discord:
             }
             if texte:
                 charge["content"] = texte[:2000]
-            ok = self.poster(charge)
+            ok = self.poster(charge, salon)
             if not ok and self.dernier_code == 400:
                 # Discord refuse le message (image ou lien invalide) : on renvoie sans image
                 # plutôt que de perdre l'alerte.
                 charge["embeds"] = [{k: v for k, v in e.items() if k not in ("thumbnail", "image")} for e in paquet]
-                ok = self.poster(charge)
+                ok = self.poster(charge, salon)
             resultats += [ok] * len(paquet)
         return resultats
 

@@ -67,6 +67,13 @@ def preparer_pc(tout: bool) -> None:
             if not (RACINE / "discord-mention.txt").exists() and sys.stdin and sys.stdin.isatty():
                 mention = input("Qui pinger à chaque alerte ? (@everyone, <@&ID_DU_ROLE>, ou Entrée pour personne)\n> ").strip()
                 (RACINE / "discord-mention.txt").write_text(mention + "\n", encoding="utf-8")
+    # Salons dédiés (facultatif) : lignes « upc = https://discord.com/api/webhooks/… ».
+    fichier_salons = RACINE / "discord-salons.txt"
+    if fichier_salons.exists():
+        for ligne in fichier_salons.read_text(encoding="utf-8").splitlines():
+            salon, _, url = (x.strip() for x in ligne.partition("="))
+            if salon and not salon.startswith("#") and url.startswith(URL_WEBHOOK):
+                os.environ.setdefault(f"DISCORD_WEBHOOK_{salon.upper()}", url)
     fichier_mention = RACINE / "discord-mention.txt"
     if not os.environ.get("DISCORD_MENTION") and fichier_mention.exists():
         mention = fichier_mention.read_text(encoding="utf-8").strip()
@@ -96,10 +103,18 @@ def main(argv: list[str] | None = None) -> int:
         preparer_pc(args.tout)
     reglages = Reglages.depuis_env()
     http.TIMEOUT_S = reglages.timeout_secondes
-    discord = Discord(reglages.discord_webhook, reglages.discord_mention, reglages.timeout_secondes)
+    discord = Discord(reglages.discord_webhook, reglages.discord_mention, reglages.timeout_secondes,
+                      salons=reglages.discord_salons)
 
     if args.test_discord:
-        return 0 if discord.texte("🧪 Test du moniteur : le webhook fonctionne.") else 1
+        from .discord import SALONS
+
+        ok = discord.texte("🧪 Test du moniteur : le webhook fonctionne (salon par défaut).") if discord.defaut else True
+        for salon, url in discord.salons.items():
+            ok = discord.texte(f"🧪 Test du moniteur : ce salon reçoit les alertes « {SALONS.get(salon, salon)} ».",
+                               salon=salon) and ok
+            log(f"Salon {salon} : {'OK' if discord.dernier_code < 300 else 'erreur'}")
+        return 0 if ok and discord.webhook else 1
     if args.liens:
         return lister_liens(args.liens)
 

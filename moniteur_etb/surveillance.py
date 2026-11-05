@@ -16,7 +16,7 @@ from urllib.parse import urlsplit
 from . import etat as etat_mod
 from .boutiques import Analyse, Boutique, analyser
 from .collection import Collection
-from .discord import BLEU, ORANGE, Discord, embed_offre, embed_rupture, resume_alertes
+from .discord import BLEU, ORANGE, Discord, embed_offre, embed_rupture, resume_alertes, salon_offre
 from .http import regler_ecart
 from .magasins import Enseigne, analyser_magasins, charger_enseignes
 from .modeles import Offre, cle_url
@@ -350,8 +350,8 @@ class Surveillance:
             }
 
         self._envoyer_alertes(alertes, horodatage)
-        if ruptures:
-            self.discord.embeds("", [embed_rupture(o) for o in ruptures])
+        for salon in sorted({salon_offre(o) for o in ruptures}):
+            self.discord.embeds("", [embed_rupture(o) for o in ruptures if salon_offre(o) == salon], salon=salon)
         self._log_erreurs(bilan.erreurs)
         bilan.alertes = len(alertes)
         bilan.duree = time.monotonic() - debut
@@ -369,11 +369,18 @@ class Surveillance:
     def _envoyer_alertes(self, alertes: list[tuple[Offre, bool]], horodatage: str) -> None:
         if not alertes:
             return
-        offres = [o for o, _ in alertes]
-        resultats = self.discord.embeds(
-            resume_alertes(offres), [embed_offre(o, nouvelle) for o, nouvelle in alertes], mention=True
-        )
-        for o, ok in zip(offres, resultats):
+        # Un message par salon (UPC, ETB, magasins, autres), chacun avec son résumé.
+        envois: list[tuple[Offre, bool]] = []
+        for salon in ("magasins", "upc", "etb", "autres"):
+            groupe = [(o, n) for o, n in alertes if salon_offre(o) == salon]
+            if not groupe:
+                continue
+            offres = [o for o, _ in groupe]
+            resultats = self.discord.embeds(
+                resume_alertes(offres), [embed_offre(o, nouvelle) for o, nouvelle in groupe], mention=True, salon=salon
+            )
+            envois += list(zip(offres, resultats))
+        for o, ok in envois:
             if ok:
                 self.etat[o.cle]["alerte"] = horodatage
                 log(f"🔔 Alerte Discord envoyée : {o.item.nom} chez {o.boutique}")
@@ -428,7 +435,7 @@ class Surveillance:
         if bilan.erreurs:
             texte = "\n".join(f"• **{s}** : {m[:150]}" for s, m in sorted(bilan.erreurs.items()))
             embeds.append({"title": f"⚠️ {len(bilan.erreurs)} source(s) en erreur", "description": texte[:4000], "color": ORANGE})
-        self.discord.embeds("", embeds)
+        self.discord.embeds("", embeds, salon="journal")
 
 
 def executer(surveillance: Surveillance, une_fois: bool = False) -> int:

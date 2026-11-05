@@ -19,12 +19,14 @@ class FauxDiscord:
         self.webhook = "https://discord.test/webhook"
         self.ok = ok
         self.messages = []
+        self.salons = []
 
-    def embeds(self, contenu, embeds, mention=False):
+    def embeds(self, contenu, embeds, mention=False, salon=""):
         self.messages.append((contenu, embeds, mention))
+        self.salons.append(salon)
         return [self.ok] * len(embeds)
 
-    def texte(self, contenu, mention=False):
+    def texte(self, contenu, mention=False, salon=""):
         self.messages.append((contenu, [], mention))
         return self.ok
 
@@ -278,7 +280,7 @@ class TestDiscordPaquets(unittest.TestCase):
 
         d = Discord("https://discord.test/webhook", mention="@everyone")
         envoyes = []
-        with mock.patch.object(Discord, "poster", side_effect=lambda charge: envoyes.append(charge) or True):
+        with mock.patch.object(Discord, "poster", side_effect=lambda charge, salon="": envoyes.append(charge) or True):
             resultats = d.embeds("🚨 test", [{"title": f"e{i}"} for i in range(23)], mention=True)
         self.assertEqual([len(c["embeds"]) for c in envoyes], [10, 10, 3])
         self.assertEqual(envoyes[0]["content"], "@everyone 🚨 test")
@@ -293,7 +295,7 @@ class TestDiscordImageRefusee(unittest.TestCase):
         d = Discord("https://discord.test/webhook")
         envoyes = []
 
-        def poster(charge):
+        def poster(charge, salon=""):
             envoyes.append(charge)
             d.dernier_code = 400 if any("thumbnail" in e for e in charge["embeds"]) else 204
             return d.dernier_code == 204
@@ -303,6 +305,52 @@ class TestDiscordImageRefusee(unittest.TestCase):
         self.assertEqual(resultats, [True])
         self.assertEqual(len(envoyes), 2)
         self.assertNotIn("thumbnail", envoyes[1]["embeds"][0])
+
+
+
+class TestSalonsDiscord(unittest.TestCase):
+    def test_un_salon_par_type_d_alerte(self):
+        from moniteur_etb.discord import salon_offre
+
+        self.assertEqual(salon_offre(offre("upc-journee")), "upc")
+        self.assertEqual(salon_offre(offre("etb")), "etb")
+        self.assertEqual(salon_offre(offre("bundle")), "autres")
+        en_magasin = offre("upc-soiree")
+        en_magasin.source = "magasin"
+        self.assertEqual(salon_offre(en_magasin), "magasins")
+
+    def test_alertes_reparties_par_salon(self):
+        etb = offre("etb", url="https://shop.fr/products/etb")
+        upc = offre("upc-journee", url="https://shop.fr/products/upc")
+        discord = FauxDiscord()
+        s = Surveillance(Reglages(), COLLECTION, [], [], discord, {})
+        s.etat = {etb.cle: {}, upc.cle: {}}
+        s._envoyer_alertes([(etb, False), (upc, False)], "2026-11-05T10:00:00+00:00")
+        self.assertEqual(discord.salons, ["upc", "etb"])
+        self.assertIn("Ultra-Premium", discord.messages[0][0])
+
+    def test_webhook_de_salon_absent_ou_invalide(self):
+        from moniteur_etb.discord import Discord
+
+        d = Discord("https://discord.test/defaut", salons={"upc": "https://discord.test/upc", "etb": ""})
+        self.assertEqual(d.url("upc"), "https://discord.test/upc")
+        self.assertEqual(d.url("etb"), "https://discord.test/defaut")  # pas de webhook propre
+        self.assertEqual(d.url("journal"), "https://discord.test/defaut")
+        appels = []
+
+        def faux_poster(url, charge):
+            appels.append(url)
+            d.dernier_code = 404 if url.endswith("/upc") else 204
+            return d.dernier_code == 204
+
+        with mock.patch.object(d, "_poster", side_effect=faux_poster):
+            self.assertTrue(d.texte("UPC !", salon="upc"))  # webhook supprimé : repli sur le salon par défaut
+        self.assertEqual(appels, ["https://discord.test/upc", "https://discord.test/defaut"])
+
+    def test_reglages_salons(self):
+        with mock.patch.dict(os.environ, {"DISCORD_WEBHOOK_UPC": " https://discord.test/upc ", "DISCORD_WEBHOOK_ETB": ""}):
+            r = Reglages.depuis_env()
+        self.assertEqual(r.discord_salons, {"upc": "https://discord.test/upc"})
 
 
 if __name__ == "__main__":
