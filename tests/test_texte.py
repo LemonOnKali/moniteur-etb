@@ -1,4 +1,6 @@
+import os
 import unittest
+from unittest import mock
 
 from moniteur_etb.texte import formater_prix, lire_prix, mots, normaliser
 
@@ -78,6 +80,28 @@ class TestPasDePreuvePasDAlerte(unittest.TestCase):
             "https://www.e.leclerc/fp/pokemon-coffret-pokemon-day-26-3b-carte-exclu-0196214139718"))
         self.assertTrue(redirection_suspecte(
             "https://www.joueclub.fr/pokemon/coffret-0196214144835.html", "https://www.joueclub.fr/nos-heros/pokemon.html"))
+
+
+class TestFichiersPC(unittest.TestCase):
+    def test_salons_avec_bom_du_bloc_notes(self):
+        """Bloc-notes Windows : fichier enregistré avec BOM, lignes CRLF, espaces."""
+        import tempfile
+        from pathlib import Path
+
+        from moniteur_etb import cli
+
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(cli, "RACINE", Path(d)), \
+                mock.patch.dict(os.environ, {}, clear=False), mock.patch("os.chdir"):
+            for cle in [k for k in os.environ if k.startswith("DISCORD_") or k.startswith("FICHIER_")]:
+                os.environ.pop(cle)
+            Path(d, "discord-webhook.txt").write_text("https://discord.com/api/webhooks/1/defaut\n", encoding="utf-8")
+            Path(d, "discord-salons.txt").write_bytes(
+                "\ufeffupc = https://discord.com/api/webhooks/2/upc\r\n# commentaire\r\njournal=https://discord.com/api/webhooks/3/j\r\n"
+                .encode("utf-8"))
+            cli.preparer_pc(tout=False)
+            self.assertEqual(os.environ["DISCORD_WEBHOOK_UPC"], "https://discord.com/api/webhooks/2/upc")
+            self.assertEqual(os.environ["DISCORD_WEBHOOK_JOURNAL"], "https://discord.com/api/webhooks/3/j")
+            self.assertEqual(os.environ["DISCORD_WEBHOOK"], "https://discord.com/api/webhooks/1/defaut")
 
 
 class TestLancementPC(unittest.TestCase):

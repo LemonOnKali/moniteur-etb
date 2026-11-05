@@ -28,7 +28,7 @@ def _lire_ou_demander(fichier: Path, question: str, valide: Callable[[str], bool
     Le fichier reste sur ce PC : il est ignoré par git, l'URL du webhook ne part jamais sur GitHub.
     """
     if fichier.exists():
-        return next((l.strip() for l in fichier.read_text(encoding="utf-8").splitlines() if l.strip()), "")
+        return next((l.strip() for l in fichier.read_text(encoding="utf-8-sig").splitlines() if l.strip()), "")
     if not sys.stdin or not sys.stdin.isatty():
         return None
     while True:
@@ -70,13 +70,13 @@ def preparer_pc(tout: bool) -> None:
     # Salons dédiés (facultatif) : lignes « upc = https://discord.com/api/webhooks/… ».
     fichier_salons = RACINE / "discord-salons.txt"
     if fichier_salons.exists():
-        for ligne in fichier_salons.read_text(encoding="utf-8").splitlines():
+        for ligne in fichier_salons.read_text(encoding="utf-8-sig").splitlines():
             salon, _, url = (x.strip() for x in ligne.partition("="))
             if salon and not salon.startswith("#") and url.startswith(URL_WEBHOOK):
                 os.environ.setdefault(f"DISCORD_WEBHOOK_{salon.upper()}", url)
     fichier_mention = RACINE / "discord-mention.txt"
     if not os.environ.get("DISCORD_MENTION") and fichier_mention.exists():
-        mention = fichier_mention.read_text(encoding="utf-8").strip()
+        mention = fichier_mention.read_text(encoding="utf-8-sig").strip()
         if mention:
             os.environ["DISCORD_MENTION"] = mention
 
