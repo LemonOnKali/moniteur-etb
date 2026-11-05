@@ -213,12 +213,14 @@ class FauxDiscord:
 
     def __init__(self):
         self.messages = []
+        self.salons = []
 
-    def embeds(self, contenu, embeds, mention=False):
+    def embeds(self, contenu, embeds, mention=False, salon=""):
         self.messages.append((contenu, embeds, mention))
+        self.salons.append(salon)
         return [True] * len(embeds)
 
-    def texte(self, contenu, mention=False):
+    def texte(self, contenu, mention=False, salon=""):
         return True
 
 

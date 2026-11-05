@@ -145,6 +145,53 @@ Plusieurs alertes dans le même cycle partent dans un seul message (10 cartes
 max). Un lancement manuel envoie un **résumé** : nombre de boutiques par
 produit, fiches suivies, sources en erreur.
 
+### Un salon par type d'alerte
+
+Le moniteur peut envoyer chaque type d'alerte dans son propre salon. Sans
+réglage, tout arrive dans le salon de `DISCORD_WEBHOOK` ; chaque salon ajouté
+prend sa part, les autres restent dans le salon par défaut.
+
+| Salon conseillé | Ce qu'il reçoit | Secret GitHub (webhook du salon) |
+|---|---|---|
+| `#🌟・upc-30-ans` | UPC Journée / Soirée / génériques en ligne | `DISCORD_WEBHOOK_UPC` |
+| `#📦・etb-30-ans` | Coffrets Dresseur d'Élite en ligne | `DISCORD_WEBHOOK_ETB` |
+| `#🏬・magasins-marseille` | stock en magasin (Micromania, Leclerc) | `DISCORD_WEBHOOK_MAGASINS` |
+| `#🛒・autres-30-ans` | reste de la gamme en ligne | `DISCORD_WEBHOOK_AUTRES` |
+| `#📋・journal-moniteur` | « Moniteur lancé », résumé, sources en erreur | `DISCORD_WEBHOOK_JOURNAL` |
+
+**Mise en place (3 minutes)**
+
+1. Sur le serveur : clic droit sur le nom du serveur → **Créer une catégorie**
+   « 🔔 RESTOCK POKÉMON 30 ANS », puis **+** à côté de la catégorie → crée les
+   cinq salons ci-dessus (salon textuel).
+2. Pour chaque salon : ⚙️ **Modifier le salon → Intégrations → Webhooks →
+   Nouveau webhook** → nomme-le « Moniteur 30 ans » → **Copier l'URL du webhook**.
+3. Sur GitHub : **Settings → Secrets and variables → Actions → New repository
+   secret**, nom `DISCORD_WEBHOOK_UPC` (etc.), valeur = l'URL copiée.
+4. Facultatif : un rôle « 🔔 Restock 30 ans » (Paramètres du serveur → Rôles,
+   cocher « Permettre à tout le monde de mentionner ce rôle »), puis la variable
+   `DISCORD_MENTION` = `<@&ID_DU_ROLE>` (clic droit sur le rôle → Copier l'identifiant,
+   mode développeur activé) : seuls ceux qui ont le rôle sont pingés.
+5. Conseillé : `#📋・journal-moniteur` en lecture seule et en notifications
+   « Rien » ; les salons d'alertes en « Tous les messages ».
+6. Vérifier : *Actions → Tester les boutiques* n'envoie rien sur Discord ;
+   lance plutôt `python moniteur.py --test-discord` sur ton PC (avec les mêmes
+   webhooks) ou relance *Moniteur de stock* : le résumé arrive dans le journal.
+
+Sur ton PC (`lancer-pc.bat`), mets les mêmes webhooks dans un fichier
+`discord-salons.txt` à côté du lanceur (jamais envoyé sur GitHub) :
+
+```
+upc = https://discord.com/api/webhooks/…
+etb = https://discord.com/api/webhooks/…
+magasins = https://discord.com/api/webhooks/…
+autres = https://discord.com/api/webhooks/…
+journal = https://discord.com/api/webhooks/…
+```
+
+Un webhook supprimé ou invalide n'empêche pas l'alerte : elle part alors dans
+le salon par défaut.
+
 ## Installation (2 minutes)
 
 1. Sur Discord : *Paramètres du salon → Intégrations → Webhooks → Nouveau webhook*,
