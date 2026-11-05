@@ -167,7 +167,9 @@ prend sa part, les autres restent dans le salon par défaut.
 2. Pour chaque salon : ⚙️ **Modifier le salon → Intégrations → Webhooks →
    Nouveau webhook** → nomme-le « Moniteur 30 ans » → **Copier l'URL du webhook**.
 3. Sur GitHub : **Settings → Secrets and variables → Actions → New repository
-   secret**, nom `DISCORD_WEBHOOK_UPC` (etc.), valeur = l'URL copiée.
+   secret**, nom `DISCORD_WEBHOOK_UPC` (etc.), valeur = l'URL copiée. Les noms
+   courts `WEBHOOK_UPC`, `WEBHOOK_ETB`, `WEBHOOK_MAGASINS`, `WEBHOOK_AUTRES`,
+   `WEBHOOK_JOURNAL` marchent aussi.
 4. Facultatif : un rôle « 🔔 Restock 30 ans » (Paramètres du serveur → Rôles,
    cocher « Permettre à tout le monde de mentionner ce rôle »), puis la variable
    `DISCORD_MENTION` = `<@&ID_DU_ROLE>` (clic droit sur le rôle → Copier l'identifiant,

@@ -40,12 +40,13 @@ jobs:
       - name: Lancer le moniteur
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          # Salons dédiés (facultatifs) : sans secret, l'alerte part dans DISCORD_WEBHOOK.
-          DISCORD_WEBHOOK_UPC: ${{ secrets.DISCORD_WEBHOOK_UPC }}
-          DISCORD_WEBHOOK_ETB: ${{ secrets.DISCORD_WEBHOOK_ETB }}
-          DISCORD_WEBHOOK_MAGASINS: ${{ secrets.DISCORD_WEBHOOK_MAGASINS }}
-          DISCORD_WEBHOOK_AUTRES: ${{ secrets.DISCORD_WEBHOOK_AUTRES }}
-          DISCORD_WEBHOOK_JOURNAL: ${{ secrets.DISCORD_WEBHOOK_JOURNAL }}
+          # Salons dédiés (facultatifs, secret DISCORD_WEBHOOK_UPC ou WEBHOOK_UPC…) :
+          # sans secret, l'alerte part dans DISCORD_WEBHOOK.
+          DISCORD_WEBHOOK_UPC: ${{ secrets.DISCORD_WEBHOOK_UPC || secrets.WEBHOOK_UPC }}
+          DISCORD_WEBHOOK_ETB: ${{ secrets.DISCORD_WEBHOOK_ETB || secrets.WEBHOOK_ETB }}
+          DISCORD_WEBHOOK_MAGASINS: ${{ secrets.DISCORD_WEBHOOK_MAGASINS || secrets.WEBHOOK_MAGASINS }}
+          DISCORD_WEBHOOK_AUTRES: ${{ secrets.DISCORD_WEBHOOK_AUTRES || secrets.WEBHOOK_AUTRES }}
+          DISCORD_WEBHOOK_JOURNAL: ${{ secrets.DISCORD_WEBHOOK_JOURNAL || secrets.WEBHOOK_JOURNAL }}
           DISCORD_MENTION: ${{ vars.DISCORD_MENTION }}
           PRIX_MAX: ${{ vars.PRIX_MAX }}
           LANGUES: ${{ vars.LANGUES || 'fr' }}
